@@ -83,6 +83,7 @@ Each article gets its own directory so multiple shared articles can coexist.
      - Add anchor IDs to each heading.
      - Highlight the current section while scrolling (scroll spy).
      - Smooth-scroll to section when a TOC item is clicked.
+     - **必须**支持 h2 分组折叠：带 h3 子项的 h2 条目前有箭头可展开/收起子项，实现见文末「TOC 折叠交互（每页必须包含）」。
    - **必须**包含图片 lightbox（点击放大 / 滚轮缩放 / 拖拽移动），完整实现见文末「图片 Lightbox（每页必须包含）」，不得省略。
 
    For **multi-page** articles, use the following layout (preferred by the user):
@@ -107,6 +108,7 @@ Each article gets its own directory so multiple shared articles can coexist.
        - The TOC itself is sticky at a position below the top navbar.
      - Highlight the current heading while scrolling (scroll spy).
      - Smooth-scroll to the heading when a TOC item is clicked.
+     - **必须**支持 h2 分组折叠：带 h3 子项的 h2 条目前有箭头可展开/收起子项，实现见文末「TOC 折叠交互（每页必须包含）」。
    - **Bottom page navigation** on every chapter page:
      - Previous / next chapter links.
 6. **Ensure root placeholder**: If `E:\project\team-share-public\index.html` does not exist, create a simple placeholder page.
@@ -359,3 +361,72 @@ img:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
 1. 正文每张图片点击后能打开 lightbox（注意 JS 选择器要覆盖正文容器内所有 `img`，含 SVG 引用图）。
 2. 滚轮可缩放（0.5x–5x）、按住可拖拽、Esc 和点击遮罩可关闭。
 3. lightbox 打开时正文禁止滚动（`body overflow: hidden`），关闭后恢复。
+
+## TOC 折叠交互（每页必须包含）
+
+左侧 TOC 中，带 `h3` 子项的 `h2` 条目（`.toc-h2`）前面必须有一个箭头，点击可展开/收起对应的 `h3` 子项，方便读者只看一级结构再逐组展开。默认全部展开。
+
+**1. CSS**：
+
+```css
+.toc a.toc-parent { position: relative; padding-left: 24px; }
+.toc .toc-arrow {
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg); /* 展开时箭头朝下 */
+  font-size: 11px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  padding: 2px 4px;
+  transition: transform 0.15s ease;
+}
+.toc a.collapsed .toc-arrow { transform: translateY(-50%) rotate(0deg); } /* 收起时箭头朝右 */
+.toc .toc-arrow:hover { color: var(--accent); }
+```
+
+**2. JS**（放在 TOC 生成代码之后、scroll spy 之前）：
+
+```js
+// Collapsible TOC groups: h2 entries with h3 children get a toggle arrow
+const tocLinksAll = Array.from(toc.querySelectorAll('a'));
+tocLinksAll.forEach((link, i) => {
+  if (!link.classList.contains('toc-h2')) return;
+  const children = [];
+  for (let j = i + 1; j < tocLinksAll.length && tocLinksAll[j].classList.contains('toc-h3'); j++) {
+    children.push(tocLinksAll[j]);
+  }
+  if (!children.length) return;
+  link.classList.add('toc-parent');
+  const arrow = document.createElement('span');
+  arrow.className = 'toc-arrow';
+  arrow.textContent = '▸';
+  link.prepend(arrow);
+  children.forEach(c => { c.parentLink = link; });
+  arrow.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const collapsed = link.classList.toggle('collapsed');
+    children.forEach(c => { c.style.display = collapsed ? 'none' : ''; });
+  });
+});
+```
+
+**3. Scroll spy 调整（关键）**：当前小节是被隐藏的 h3 时，高亮要落到它的父级 h2 上，否则 TOC 里看不到任何高亮。在原来"给 active 链接加高亮"的位置改成：
+
+```js
+if (current) {
+  let active = tocLinks.find(a => a.getAttribute('href') === '#' + current);
+  if (active && active.style.display === 'none' && active.parentLink) {
+    active = active.parentLink; // 子项被折叠时，高亮父级 h2
+  }
+  if (active) active.classList.add('active');
+}
+```
+
+**自查清单**：
+1. 有 h3 子项的 h2 条目左侧有箭头；无子项的 h2 没有箭头。
+2. 点箭头只折叠/展开，不触发跳转；点条目文字仍正常跳转。
+3. 子项被折叠时，滚动到该组内任意 h3，高亮显示在父级 h2 上。
+4. 默认状态为全部展开。
