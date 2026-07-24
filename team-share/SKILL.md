@@ -93,7 +93,7 @@ Each article gets its own directory so multiple shared articles can coexist.
      - Provide a grid of chapter cards; each card links to its chapter page.
    - **Chapter pages** (`E:\project\team-share-public\<slug>\<chapter>.html`):
      - Each page renders **one chapter** of Markdown.
-     - Structure the chapter content with numbered `h2`/`h3` headings (e.g., `## 1. ...`, `### 1.1 ...`) so the TOC can display a clear hierarchy.
+     - Structure the chapter content with numbered `h2`/`h3` headings — this is **mandatory**: `## 1. ...`, `## 2. ...` for h2 and `### 1.1 ...`, `### 1.2 ...` for h3 (numbering follows the parent h2), so the TOC shows a clear numbered hierarchy.
      - **必须**包含同一个图片 lightbox（见文末「图片 Lightbox（每页必须包含）」），landing 页和每个 chapter 页都要有。
      - Chapter file names should be short and in kebab-case or pinyin (e.g., `architecture.html`, `frame.html`, `encoding.html`).
    - **Persistent top navbar** on every page (landing + all chapters):
@@ -134,6 +134,7 @@ Each article gets its own directory so multiple shared articles can coexist.
 - Do not include links back to the main knowledge base in standalone articles.
 - If the user only provides a topic without content, ask for the content before creating the file.
 - When an article grows too long for a single page, proactively propose the multi-page landing + chapters structure.
+- **标题编号（强制）**：正文标题必须带编号——h2 用 `## 1. xxx`、`## 2. xxx` 顺序编号，h3 用 `### 1.1 xxx`、`### 1.2 xxx`、`### 2.1 xxx` 跟随所属 h2 编号。TOC 直接取自标题文本，因此 TOC 里也必须能看到 `1.` / `1.1` 这样的编号。
 - 配图规则（两个 workflow 通用）：复杂技术图优先调用 `fireworks-tech-graph` skill 生成 SVG；简单图示直接用本文末尾的 Rich Visualization HTML 组件；能不画图就不画。一切以读者的阅读体验为先——层次清晰、配色克制、重点突出。
 - **图片交互规则（强制）**：任何包含图片的独立 HTML 页面（single-page、landing、chapter 都算）都必须实现文末「图片 Lightbox」的完整交互——点击放大、滚轮缩放、拖拽移动、Esc/点击关闭。缺了 lightbox 视为页面未完成；更新已有页面时如果发现没有，要顺手补上。
 
@@ -370,6 +371,8 @@ img:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
 
 ```css
 .toc a.toc-parent { position: relative; padding-left: 24px; }
+/* h3 子项缩进：文字起始位置必须明显在 h2 父项文字之后（父项 padding-left 24px，子项在此基础上再缩进） */
+.toc a.toc-h3 { padding-left: 38px; font-size: 13px; }
 .toc .toc-arrow {
   position: absolute;
   left: 6px;
@@ -430,3 +433,5 @@ if (current) {
 2. 点箭头只折叠/展开，不触发跳转；点条目文字仍正常跳转。
 3. 子项被折叠时，滚动到该组内任意 h3，高亮显示在父级 h2 上。
 4. 默认状态为全部展开。
+5. h3 条目（如 `1.1`）的文字起始位置必须明显缩进在 h2 条目（如 `1.`）文字之后，不能对齐或反超。
+6. TOC 中 h2 条目必须带编号（`1.` `2.` `3.`…），h3 条目必须带子编号（`1.1` `1.2` `2.1`…）；编号来自正文标题本身（见 Important Rules 的标题编号规则）。
