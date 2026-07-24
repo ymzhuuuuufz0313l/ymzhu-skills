@@ -330,7 +330,7 @@ img:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
 <div class="lightbox" id="lightbox">
   <span class="close" id="lightbox-close">&times;</span>
   <img id="lightbox-img" src="" alt="">
-  <div class="hint">滚轮缩放 · 拖拽移动 · 点击关闭</div>
+  <div class="hint">滚轮缩放 · 拖拽移动 · Esc 或点击空白处关闭</div>
 </div>
 ```
 
