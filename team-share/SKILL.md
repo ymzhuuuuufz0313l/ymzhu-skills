@@ -83,7 +83,7 @@ Each article gets its own directory so multiple shared articles can coexist.
      - Add anchor IDs to each heading.
      - Highlight the current section while scrolling (scroll spy).
      - Smooth-scroll to section when a TOC item is clicked.
-   - Include a custom image lightbox supporting click-to-zoom, mouse-wheel zoom, and drag pan.
+   - **必须**包含图片 lightbox（点击放大 / 滚轮缩放 / 拖拽移动），完整实现见文末「图片 Lightbox（每页必须包含）」，不得省略。
 
    For **multi-page** articles, use the following layout (preferred by the user):
    - **Landing page** (`E:\project\team-share-public\<slug>\index.html`):
@@ -93,7 +93,7 @@ Each article gets its own directory so multiple shared articles can coexist.
    - **Chapter pages** (`E:\project\team-share-public\<slug>\<chapter>.html`):
      - Each page renders **one chapter** of Markdown.
      - Structure the chapter content with numbered `h2`/`h3` headings (e.g., `## 1. ...`, `### 1.1 ...`) so the TOC can display a clear hierarchy.
-     - Include the same custom image lightbox.
+     - **必须**包含同一个图片 lightbox（见文末「图片 Lightbox（每页必须包含）」），landing 页和每个 chapter 页都要有。
      - Chapter file names should be short and in kebab-case or pinyin (e.g., `architecture.html`, `frame.html`, `encoding.html`).
    - **Persistent top navbar** on every page (landing + all chapters):
      - Sticky at the top, visible while scrolling.
@@ -133,6 +133,7 @@ Each article gets its own directory so multiple shared articles can coexist.
 - If the user only provides a topic without content, ask for the content before creating the file.
 - When an article grows too long for a single page, proactively propose the multi-page landing + chapters structure.
 - 配图规则（两个 workflow 通用）：复杂技术图优先调用 `fireworks-tech-graph` skill 生成 SVG；简单图示直接用本文末尾的 Rich Visualization HTML 组件；能不画图就不画。一切以读者的阅读体验为先——层次清晰、配色克制、重点突出。
+- **图片交互规则（强制）**：任何包含图片的独立 HTML 页面（single-page、landing、chapter 都算）都必须实现文末「图片 Lightbox」的完整交互——点击放大、滚轮缩放、拖拽移动、Esc/点击关闭。缺了 lightbox 视为页面未完成；更新已有页面时如果发现没有，要顺手补上。
 
 ## Rich Visualization Components（推荐样式，用户确认 0717）
 
@@ -239,3 +240,122 @@ Each article gets its own directory so multiple shared articles can coexist.
 .prow .k { font-weight: 700; color: var(--accent); }
 .prow code { font-size: 13px; }
 ```
+
+## 图片 Lightbox（每页必须包含）
+
+任何含图片的独立 HTML 页面都必须带以下 lightbox，读者点击图片后可放大、滚轮缩放、拖拽移动。参考实现：`hk1v11-longcode-420b-verification/debug-log.html`。
+
+**1. 正文图片样式**（`cursor: zoom-in` 提示可点击）：
+
+```css
+img {
+  max-width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  cursor: zoom-in;
+  display: block;
+  margin: 28px auto;
+  transition: box-shadow 0.2s ease;
+}
+img:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+```
+
+**2. Lightbox CSS**：
+
+```css
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  cursor: grab;
+}
+.lightbox.active { opacity: 1; visibility: visible; }
+.lightbox img {
+  max-width: none;
+  max-height: none;
+  border: none;
+  border-radius: 4px;
+  cursor: grab;
+  transform-origin: center center;
+  transition: none;
+  margin: 0;
+}
+.lightbox img.grabbing { cursor: grabbing; }
+.lightbox .hint {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  pointer-events: none;
+  user-select: none;
+  background: rgba(0,0,0,0.4);
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+.lightbox .close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  color: rgba(255,255,255,0.8);
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.lightbox .close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+```
+
+**3. Lightbox HTML**（放在 `</body>` 前）：
+
+```html
+<div class="lightbox" id="lightbox">
+  <span class="close" id="lightbox-close">&times;</span>
+  <img id="lightbox-img" src="" alt="">
+  <div class="hint">滚轮缩放 · 拖拽移动 · 点击关闭</div>
+</div>
+```
+
+**4. Lightbox JS**（放在渲染 markdown 的 `marked.parse(...)` 之后；`.article img` 选择器要与正文容器实际 class 一致）：
+
+```html
+<script>
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = document.getElementById('lightbox-img');
+  const lightboxClose = document.getElementById('lightbox-close');
+  let scale = 1, translateX = 0, translateY = 0;
+  let isDragging = false, startX = 0, startY = 0, initialTranslateX = 0, initialTranslateY = 0;
+  function updateTransform() { lightboxImg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`; }
+  function resetTransform() { scale = 1; translateX = 0; translateY = 0; updateTransform(); }
+  function openLightbox(src) { lightboxImg.src = src; resetTransform(); lightbox.classList.add('active'); document.body.style.overflow = 'hidden'; }
+  function closeLightbox() { lightbox.classList.remove('active'); document.body.style.overflow = ''; setTimeout(() => { lightboxImg.src = ''; }, 250); }
+  document.querySelectorAll('.article img').forEach(img => img.addEventListener('click', () => openLightbox(img.src)));
+  lightboxClose.addEventListener('click', (e) => { e.stopPropagation(); closeLightbox(); });
+  lightbox.addEventListener('click', (e) => { if (e.target === lightbox) closeLightbox(); });
+  lightbox.addEventListener('wheel', (e) => { e.preventDefault(); scale = Math.min(Math.max(0.5, scale + (e.deltaY > 0 ? -0.15 : 0.15)), 5); updateTransform(); }, { passive: false });
+  lightboxImg.addEventListener('mousedown', (e) => { e.preventDefault(); isDragging = true; lightboxImg.classList.add('grabbing'); startX = e.clientX; startY = e.clientY; initialTranslateX = translateX; initialTranslateY = translateY; });
+  window.addEventListener('mousemove', (e) => { if (!isDragging) return; translateX = initialTranslateX + (e.clientX - startX); translateY = initialTranslateY + (e.clientY - startY); updateTransform(); });
+  window.addEventListener('mouseup', () => { isDragging = false; lightboxImg.classList.remove('grabbing'); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+</script>
+```
+
+**自查清单**（生成/更新页面后逐项确认）：
+1. 正文每张图片点击后能打开 lightbox（注意 JS 选择器要覆盖正文容器内所有 `img`，含 SVG 引用图）。
+2. 滚轮可缩放（0.5x–5x）、按住可拖拽、Esc 和点击遮罩可关闭。
+3. lightbox 打开时正文禁止滚动（`body overflow: hidden`），关闭后恢复。
