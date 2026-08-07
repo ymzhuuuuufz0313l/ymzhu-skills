@@ -7,8 +7,9 @@ description: >-
   graphs to validate file lists (file_list.f). Text-search based, no EDA or
   AST tooling required. Use when the user asks to trace a signal, analyze CDC
   risk, map module call/instantiation relationships, or check a file list.
-  触发词: "信号追踪", "signal trace", "信号路径", "跨时钟域", "CDC 分析",
-  "模块依赖", "调用关系", "file_list", "拓扑排序". Do not use as a replacement
+  触发词: "检查信号", "信号追踪", "信号链路", "信号是否连通", "signal trace",
+  "信号路径", "跨时钟域", "CDC 分析", "模块依赖", "调用关系", "file_list",
+  "拓扑排序". Do not use as a replacement
   for real CDC/EDA signoff tools.
 ---
 

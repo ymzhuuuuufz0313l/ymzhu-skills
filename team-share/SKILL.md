@@ -49,8 +49,37 @@ Each article gets its own directory so multiple shared articles can coexist.
    - **配图决策（先判断是否需要图，再决定怎么画）**:
      - **不需要画图**：纯文字、代码、表格就能讲清的内容，不配图，不调用任何绘图 skill。
      - **简单图**（几步的线性流程、简单状态/进展、简单对比）：直接用下方「Rich Visualization Components」中的 flow / timeline / badge / statbar / pcard 等 HTML 组件表达，**不调用** `fireworks-tech-graph`。
-     - **复杂技术图**（架构图、数据流图、时序图、寄存器/地址映射、多层级结构等）：**优先调用 `fireworks-tech-graph` skill** 生成 SVG，引用为 `./<name>.svg`。SVG 优先于 PNG。
+     - **复杂技术图**（架构图、数据流图、时序图、寄存器/地址映射、多层级结构等）：根据图类型选择工具：
+       - **流程图/调用关系图/层次结构图**：优先用 **Graphviz** 自动布局（见下方「Graphviz 使用方式」），避免手写 SVG 坐标错位。
+       - **架构图/数据流图/时序图/UML 图**：优先调用 `fireworks-tech-graph` skill 生成 SVG（见下方「fireworks-tech-graph 使用方式」），引用为 `./<name>.svg`。SVG 优先于 PNG。
      - 无论哪种方式，图和组件都服务于读者体验：层次清晰、配色克制、重点突出，宁缺毋滥，不为配图而配图。
+   **Graphviz 使用方式**
+
+   当绘制流程图、调用关系图、层次结构图时，优先使用 Graphviz 自动布局。
+
+   1. **安装**：`winget install graphviz`
+   2. **编写 DOT 文件**：定义节点、边、分组（cluster），如 `scripts/script_flow.dot`
+   3. **生成 SVG**：`dot -Tsvg input.dot -o output.svg`
+   4. **引用**：`./output.svg`
+
+   优点：自动布局，箭头、节点、标签规整，不需要手写坐标。
+
+   **fireworks-tech-graph 使用方式**
+
+   当绘制架构图、数据流图、时序图、UML 图时，调用 `fireworks-tech-graph` skill。
+
+   工作流：
+   1. 分类图类型
+   2. 提取结构（节点、边、层次）
+   3. 规划布局
+   4. 加载样式（默认 style-1-flat-icon）
+   5. 生成 SVG（Python list 方法或 `generate-from-template.py`）
+   6. 验证（`validate-svg.sh`）
+   7. 导出 PNG（`generate-diagram.sh` 或 `cairosvg`）
+   8. 视觉检查（读取 PNG 确认无重叠）
+
+   优点：精细控制每个元素的位置和样式，支持 8 种视觉风格。
+
    - Add cache-control meta tags to reduce browser caching:
      ```html
      <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">

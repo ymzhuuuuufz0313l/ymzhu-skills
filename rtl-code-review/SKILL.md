@@ -5,8 +5,9 @@ description: >-
   timing risk, maintainability, synthesis-friendliness, interface consistency,
   with severity grading and a pass/fail gate. Use when the user asks to review
   RTL changes, run a code review before commit/delivery, or do a reliability
-  check on hardware code. 触发词: "rtl review", "code review", "代码评审",
-  "对抗评审", "交付前 review", "可靠性检查". Do not use for running
+  check on hardware code. 触发词: "检查 rtl", "检查RTL", "检查 RTL",
+  "帮我检查 rtl", "rtl review", "code review", "代码评审", "对抗评审",
+  "交付前 review", "可靠性检查". Do not use for running
   simulations, debugging testbenches, or reviewing non-RTL code.
 ---
 
