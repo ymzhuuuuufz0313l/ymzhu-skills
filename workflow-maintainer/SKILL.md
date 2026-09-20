@@ -174,3 +174,5 @@ description: Maintain user workflow preferences, change logs, and server handoff
 - 如果用户没有说明修改原因，可以标注"原因：未说明"并提醒用户补充。
 - `REVIEW.md` 是临时文件，每次生成会覆盖旧内容。
 - `CHANGES.md` 是累计日志，按日期追加，不删除历史记录。
+
+<!-- ymzhu 2026-09-20 11:04 -->
