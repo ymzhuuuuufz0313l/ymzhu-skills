@@ -20,6 +20,33 @@ description: Maintain user workflow preferences, change logs, and server handoff
 3. **CHANGES.md** 存放累计变更日志。
 4. **REVIEW.md** 是临时文件，用于服务器回传前检查，可覆盖。
 5. **严格记录**：每次修改必须包含文件路径、修改类型、行号范围、修改摘要、修改原因。
+6. **文件尾签名（全局强制，适用于所有"代码相关"文件修改）**：见下方「全局文件签名规则」。
+
+## 全局文件签名规则（ymzhu，2026-09-18 起，所有项目适用）
+
+**每次更新文件后，必须在文件末尾按文件类型添加一行注释签名**，内容为 `ymzhu + 日期 + 时间（精确到分钟）`，格式：`ymzhu 2026-09-18 16:30`。
+
+| 文件类型 | 注释写法 |
+|---|---|
+| `.tcl` / `.pl` / `.py` / `.sh` / `.f` / `.tcl` 脚本 | `# ymzhu 2026-09-18 16:30` |
+| `.v` / `.sv` / `.svh` | `// ymzhu 2026-09-18 16:30` |
+| `.c` / `.h` | `/* ymzhu 2026-09-18 16:30 */` |
+| `.md` / `.html` | `<!-- ymzhu 2026-09-18 16:30 -->` |
+
+规则细节：
+- **替换而非累积**：同一文件多次更新时，把末尾签名**替换**为最新时间，不追加多行。
+- **无注释语法的文件**（如 `.csv`、`.tar.gz`）不添加。
+- 纯二进制文件、生成产物（如 `latest/` 下的运行输出）不添加。
+- 该规则已同步写入各项目的 `AGENTS.md`「工作流偏好」章节；若某项目 AGENTS.md 缺失此条，以本规则为准并补录。
+
+## Skill 本体的维护纪律（ymzhu，2026-09-20 起）
+
+**Skill 文件（SKILL.md 等）被修改后，必须同步到 skill 收集仓库并推送 GitHub**：
+
+- 本地 skill 目录本身就是 git 仓库：`C:\Users\zhuyanming\.dsh\skills\`（remote = https://github.com/ymzhuuuuufz0313l/ymzhu-skills.git）。
+- 修改任何 skill 后，在该目录执行 git add / git commit / git push origin main，并向用户回报 commit 号。
+- `C:\Users\zhuyanming\.kimi\skills\` 是同一 remote 的第二个克隆，push 后需保持一致（pull 或同步文件）。
+- **网站内容配套规则**（全文见 `team-share` skill）：任何网站内容修改，任务收尾时必须 commit + push 到 GitHub 并回报 commit 号——线上页面只在 push 后更新，不 push = 修改对读者不存在；日报站 push 前先重跑 `generate.py`。
 
 ## 工作流
 

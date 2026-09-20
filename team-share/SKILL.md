@@ -42,7 +42,9 @@ Each article gets its own directory so multiple shared articles can coexist.
    - **Single-page** (default for short articles): one `index.html` with a floating TOC.
    - **Multi-page** (recommended when the article is long or the user wants an overview landing page): `index.html` landing page + one HTML file per major chapter.
 5. **Generate standalone HTML**:
-   - Include clean modern styles (light/dark mode support).
+   - **视觉风格（强制，2026-09-09 用户定稿）：一律使用蓝图工程风（blueprint engineering aesthetic）**，完整设计令牌与组件规范见 `blueprint-ui-style` skill（生成页面前必须先加载它）。参考实现：`fusion-compiler-migration/`（共享 style.css 多页结构）与 `hk1v11-lc-cpuwr-history/`（自包含单页结构）。禁止紫色玻璃拟态/紫渐变/霓虹光晕（旧画风，已废弃）。
+   - 每页 `<head>` 必须带 Google Fonts：`IBM Plex Mono:wght@400;500;600` + `Noto+Serif+SC:wght@600;900`（两个 preconnect + 一条 css2 link）。数字/代码/标签用 IBM Plex Mono，展示大标题用 Noto Serif SC 900。
+   - 核心令牌（浅色 / 深色 prefers-color-scheme）：bg `#f4f1ea`/`#0e1420`、surface `#fffdf7`/`#161f31`、text `#1c2534`/`#e9e5d9`、muted `#667180`/`#9aa4b5`、accent（琥珀）`#b45309`/`#f0a137`、accent-strong `#92400e`/`#f6b95c`、accent-soft `#f7e8d4`/`#3a2f1a`、line `#ddd6c8`/`#2b3852`、chip `#efe9db`/`#1e2a44`、ink 渐变 `#0d1526→#131f38`、阴影 `0 12px 32px rgba(28,37,52,.10)`。
    - Embed Markdown content **without the VitePress frontmatter block** (`--- title: ... ---`).
    - Put the Markdown source inside a `<script type="text/template" id="md">` block, then read it via `document.getElementById('md').textContent`. Do NOT put Markdown inside a JS template literal, because backslashes in code snippets (e.g., `\`, `\p`, `\H`) cause syntax errors.
    - Copy required images to the same directory.
@@ -130,6 +132,8 @@ Each article gets its own directory so multiple shared articles can coexist.
      - Links to the landing page and every chapter.
      - Highlight the current page.
      - On mobile, allow horizontal scroll for overflow items.
+     - **数量上限（强制，2026-09-09 用户定稿）：导航条最多放 首页 + 9 个 sheet**；第 10 个起的 sheet 不进导航（只从首页章节卡进入），防止导航拥挤/溢出截断（synthesis-integration-flow-guide 12 页实测教训）。
+     - **尺寸统一（强制）：全站所有页面（含 landing）导航使用同一组度量**——landing 导航 max-width 1120px、**sheet 页导航 max-width 1288px（用户指定 +15%）** / padding 10px 24px / flex-wrap:wrap 换行兜底；品牌 14px；链接 13.5px、padding 5px 10px；搜索按钮 margin-left:auto 钉最右。禁止某几页私改度量（2026-09-09 首页 vs 子页不统一教训）。
    - **Left-side TOC** on every chapter page (desktop only):
      - Show the current page title (`h1`) and its in-page `h2`/`h3` headings only. **Do not** show cross-page chapter links here (those belong in the top navbar).
      - Keep the TOC sticky and always visible while scrolling the right-side content:
@@ -164,12 +168,21 @@ Each article gets its own directory so multiple shared articles can coexist.
 - If the user only provides a topic without content, ask for the content before creating the file.
 - When an article grows too long for a single page, proactively propose the multi-page landing + chapters structure.
 - **标题编号（强制）**：正文标题必须带编号——h2 用 `## 1. xxx`、`## 2. xxx` 顺序编号，h3 用 `### 1.1 xxx`、`### 1.2 xxx`、`### 2.1 xxx` 跟随所属 h2 编号。TOC 直接取自标题文本，因此 TOC 里也必须能看到 `1.` / `1.1` 这样的编号。
+- **标题级别一致性（强制，2026-09-09 用户补充）**：语义同级的标题必须用同一 heading 级别——不能让同级标题有的 h2 有的 h3（TOC 里会看起来层级错乱）。每个 sheet 内编号独立从 1 开始。**Sheet 自身的序号用中文数字**（一/二/三/四/五），不用 01/02 阿拉伯编号。
+- **多页主题标题体系（强制，2026-09-09 用户定稿，范本 hk1v11-lc-cpuwr-history）**：
+  - 每页 h1 = Sheet 标题，带中文数字前缀（`# 一、XXX`）；正文一律从 h2 `## 1.` 起编，h3 `### 1.1`，h4 `#### 1.1.1`。
+  - **一篇长文档拆成多 sheet 时，必须重新起编**——禁止把原文档的连续编号带进子页（否则出现 sheet 内顶端就是 `## 1.1`、sheet 2 从 `## 2.1` 开始的错乱）；原 `## X.Y` → `## Y.`、`### X.Y.Z` → `### Y.Z`，无编号的小节标题（如 `### 证据 ①`）补父级.序号。
+  - **编号必须连续，禁止"插队号"**——后插章节不许用 `## 1.5` 这种号（LC_CPUWR regmap 页实测问题），要么插入后全节顺延重编，要么排到末尾。
+  - 重编号后必须同步正文交叉引用（"见 3.2 节"等）与 page-nav 文字。
+  - TOC 缩进规范：h2 条目 `padding-left: 24px`（预留箭头槽位，无折叠箭头的主题也预留，保持全站一致），h3 `padding-left: 38px`。
 - 配图规则（两个 workflow 通用）：复杂技术图优先调用 `fireworks-tech-graph` skill 生成 SVG；简单图示直接用本文末尾的 Rich Visualization HTML 组件；能不画图就不画。一切以读者的阅读体验为先——层次清晰、配色克制、重点突出。
 - **图片交互规则（强制）**：任何包含图片的独立 HTML 页面（single-page、landing、chapter 都算）都必须实现文末「图片 Lightbox」的完整交互——点击放大、滚轮缩放、拖拽移动、Esc/点击关闭。缺了 lightbox 视为页面未完成；更新已有页面时如果发现没有，要顺手补上。
 
 ## Rich Visualization Components（推荐样式，用户确认 0717）
 
 页面内容较丰富时（问题追踪/调试实录/进展报告类），在 markdown 中嵌入以下 HTML 组件增强可视化。范例页面：`hk1v11-longcode-420b-verification/debug-log.html`。
+
+**配色体系（2026-09-09 起）：以下组件全部继承蓝图工程风令牌**（`var(--accent)` 琥珀、`var(--accent-soft)`、`var(--chip)` 等，定义见上文「视觉风格（强制）」）；数字/编号/日期类元素（`.num`、`.tdate`、`.k`）字体一律 IBM Plex Mono。
 
 **使用规则**：
 - 组件 CSS 统一放在该页 `<style>` 末尾，必须含暗色模式变体（`@media (prefers-color-scheme: dark)`）。
@@ -215,7 +228,7 @@ Each article gets its own directory so multiple shared articles can coexist.
 ```css
 .statbar { display: flex; gap: 16px; flex-wrap: wrap; margin: 24px 0 8px; }
 .stat { flex: 1; min-width: 130px; text-align: center; border: 1px solid var(--line); border-radius: 14px; padding: 14px 8px; background: var(--surface); }
-.stat .num { font-size: 30px; font-weight: 800; color: var(--accent); line-height: 1.2; }
+.stat .num { font-family: "IBM Plex Mono", Consolas, monospace; font-size: 30px; font-weight: 600; color: var(--accent); line-height: 1.2; }
 .stat .num.ok { color: #16a34a; }
 .stat .num.warn { color: #eab308; }
 .stat .lbl { font-size: 13px; color: var(--muted); margin-top: 4px; }
@@ -399,9 +412,10 @@ img:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
 **1. CSS**：
 
 ```css
-.toc a.toc-parent { position: relative; padding-left: 24px; }
+.toc a.toc-h2 { position: relative; padding-left: 24px; } /* 所有 h2 统一预留箭头槽位，无子项的 h2 也与有子项的视觉对齐（2026-09-09 用户要求） */
 /* h3 子项缩进：文字起始位置必须明显在 h2 父项文字之后（父项 padding-left 24px，子项在此基础上再缩进） */
 .toc a.toc-h3 { padding-left: 38px; font-size: 13px; }
+.toc a.toc-parent { position: relative; }
 .toc .toc-arrow {
   position: absolute;
   left: 6px;
@@ -464,3 +478,35 @@ if (current) {
 4. 默认状态为全部展开。
 5. h3 条目（如 `1.1`）的文字起始位置必须明显缩进在 h2 条目（如 `1.`）文字之后，不能对齐或反超。
 6. TOC 中 h2 条目必须带编号（`1.` `2.` `3.`…），h3 条目必须带子编号（`1.1` `1.2` `2.1`…）；编号来自正文标题本身（见 Important Rules 的标题编号规则）。
+
+---
+
+## 图表文字渲染规范（PIL 表格图，如 PowerPro 六组图 / 对比图）
+
+做 PIL 表格图（`render_table` / 自写 renderer，teal 表头风格）时，文字渲染必须遵守以下规则（本规范来自 2026-08-27 PowerPro 0826 六组图多轮评审沉淀）：
+
+### 1. 字体选择：同一元素内字体必须一致，不同元素可以不同字体
+
+- **同一元素**（一个标题条 / 一个表头单元格 / 一个数据单元格）内的全部字符必须使用**同一个字体对象**整串渲染（`draw.text(pos, whole_string, font=f)` 一次画完），**禁止**在元素内部按字符切换字体（不要用逐字符 `draw_mixed` 中英混排——两字体 ascent/baseline 不同必然导致元素内字符上下错位"不在一行"）。
+- **不同元素之间**允许不同字体（标题行与数据部分不需要同字体）：
+  - 标题条 / 表头 → CJK 粗体（中文为主）
+  - 数据单元格 → 沿用该图已认可的字体体系即可（如 msyh 常规/粗体）；如需数字列更整齐，可对纯英文/数字单元格改用等宽字体——但**必须先给用户确认**，不要擅自改变整体字体风格。
+- ⚠️ 教训：不要为了"统一"擅自更换全图字体（NotoSansSC/Deng 等线都试过）——用户对已认可的视觉密度很敏感，任何全局字体更换都会被判"不如之前"；只修对齐问题，不动字体风格。
+
+### 2. 基线对齐：每格整串渲染后按字体 ascent 垂直居中
+
+- 不要用 `(cell_h - font.size)//2` 近似居中——不同字体的 `size` 与 `ascent` 关系不同。
+- 用 `font.getmetrics()[0]` 取 ascent，`y_text = cell_y + (cell_h - ascent) // 2` 计算绘制起点。
+- 同一行内所有单元格共用同一 `cell_y` → 全行字符上沿/下沿齐平。
+
+### 3. 标题/表头
+
+- 标题条（teal 底）用 CJK 粗体整串渲染；文字过长时**先量宽度**（`font.getlength(title)`）确认不超过画布，超宽要压缩文案而不是依赖自动截断；副标题放不下就省略（渲染器会把放不下的副标题静默丢弃，不要留悬念）。
+- 表头同标题：CJK 粗体整串 + ascent 居中。
+
+### 4. 评审迭代避坑记录（PowerPro 0826 六组图实测）
+
+- **用户要的是"字体平行"（基线对齐），不是"字体统一"**——曾三次尝试全局换字体（NotoSansSC / Deng / 数据格等宽化）全部被否："回到之前的图""反而非常难看"。正确做法：保持已认可视觉的一切不变，只把混排改成整串渲染。
+- 行高亮/单元格高亮：0826 行只高亮**指定列的单格**（teal 字 + 浅青底），不要整行背景；其余行列保持默认（INK + 白/斑马）。
+- 数值精度：Total 等数值统一 2 位小数四舍五入（`.2f`），不同来源（报告 / Excel 汇总）要一致。
+- 造图脚本必须可重跑（数据源硬编码 CSV 路径 + 脚本注释数据来源），禁止手改 PNG。
