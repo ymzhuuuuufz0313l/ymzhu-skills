@@ -79,6 +79,10 @@ SKILL_ROOT="${CLAUDE_SKILL_DIR:-/absolute/path/from-codex-skill-metadata}"
 
 ## Workflow (Always Follow This Order)
 
+0. **Routing** — When the user's request is ambiguous between a technical diagram and an AI-generated image, present both options and ask which they prefer:
+   - **Option A (fireworks-tech-graph)**: Deterministic SVG diagram — pixel-precise, editable, keyless, best for architecture / UML / flowcharts / network / topology
+   - **Option B (gpt-image-2-style-library)**: AI-generated raster image — visually rich, needs gpt-image-2 API, best for posters / brand / illustration / concept art
+   Example ambiguity triggers: "画图", "draw", "做个图", "generate an image". If the request clearly targets one domain, proceed directly without asking.
 1. **Classify** the diagram type (see Diagram Types below)
 2. **Extract structure** — identify layers, nodes, edges, flows, and semantic groups from user description
 3. **Plan layout** — apply the layout rules for the diagram type

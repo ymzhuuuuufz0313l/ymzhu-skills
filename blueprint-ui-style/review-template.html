@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Screenshot Review — ← → to switch</title>
+<style>
+  body { margin:0; background:#0d1526; color:#ece7d9; font-family:Consolas,monospace; display:flex; flex-direction:column; height:100vh; }
+  header { padding:10px 16px; font-size:13px; color:#f0a137; display:flex; gap:16px; align-items:center; }
+  header .pos { color:#ece7d9; }
+  main { flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+  main img { max-width:96%; max-height:88vh; box-shadow:0 12px 32px rgba(0,0,0,.5); border-radius:8px; }
+  footer { padding:8px 16px; font-size:12px; color:#9aa4b5; }
+</style>
+</head>
+<body>
+<header>
+  <span>SCREENSHOT REVIEW</span>
+  <span class="pos" id="pos"></span>
+  <span id="name"></span>
+</header>
+<main><img id="img" src=""></main>
+<footer>← / → 方向键切换 · Home/End 首末 · 数字键 1-9 直达</footer>
+<script>
+// 填入本批截图文件名（按 01_/02_ 序号顺序），然后整个 review.html 放进截图文件夹
+const imgs = ["01_xxx.png"]; // <-- 填这里
+let i = 0;
+function show() {
+  document.getElementById('img').src = imgs[i];
+  document.getElementById('pos').textContent = (i+1) + ' / ' + imgs.length;
+  document.getElementById('name').textContent = imgs[i];
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') { i = Math.min(imgs.length-1, i+1); show(); }
+  else if (e.key === 'ArrowLeft') { i = Math.max(0, i-1); show(); }
+  else if (e.key === 'Home') { i = 0; show(); }
+  else if (e.key === 'End') { i = imgs.length-1; show(); }
+  else if (/^[1-9]$/.test(e.key) && +e.key <= imgs.length) { i = +e.key - 1; show(); }
+});
+show();
+</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 ---
 name: agent-teams-router
 description: 判断任务是否适合启用 dsh-agent-teams 多智能体团队模式，并给出激活方式与成本控制。触发词："agent teams"、"团队协作"、"并行审查"、"多角度评审"、"多模块并行"、"分头调研"、"批量审计"、"建团队"、"agent-teams"。当用户任务可拆成多条互不依赖的独立工作线时也应主动建议使用。
+disable-model-invocation: false
 ---
 
 # Agent Teams 路由
