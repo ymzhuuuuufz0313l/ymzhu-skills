@@ -46,20 +46,16 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 ## 3. RTL（HDL）包
 
-**合并式覆盖到本地 `HDL\`**：同名文件覆盖、新增文件添加、**本地独有文件保留**（可能是只在本机用的脚本/配置，禁止整目录替换误删）。
+**合并式覆盖到本地 `HDL\`**（与 DV_TCON_C 同一套规则）：同名文件覆盖、新增文件添加（影响 file_list 就同步 `.f`）、本地独有文件保留。
 
-- 同名文件：diff 后逐个覆盖（重点看近期改动模块：LONG_ENCODING_ALIGN / SHORT_ENCODING_OUTPUT / SHORT_ENCODING_ALIGN 等）。
-- 新增文件：直接添加进 `HDL\`；若影响 file_list，同步更新 `.f`。
-- 本地独有文件：保留，列出清单说明。
-- 仍写 `README_中间版本说明.md`（快照来源 + diff 摘要 + 采纳/保留决策），文末签名。
-- RTL 功能性修改采纳后走 RTL 三关（iverilog → rtl-code-review → rtl-signal-trace）+ 修改记录双轨；版本头按 version-archive 规则更新。
+- 覆盖是**同步动作，不做 check/评审**——只记录覆盖/新增/保留了哪些文件，写进 `README_中间版本说明.md`（快照来源 + diff 摘要 + 文件清单），文末签名。
+- RTL 三关（iverilog / rtl-code-review / rtl-signal-trace）**不适用**于包覆盖：那是"本地自行修改 RTL 功能并发布新版本"时才走的流程；服务器回传包是权威交付物的搬运。
 
 ## 4. DV_TCON_C 包
 
-**合并式覆盖到本地 `DV_TCON_C\`**：同名 case/env/checker 文件覆盖、新增 case 添加、本地独有文件保留。
+**合并式覆盖到本地 `DV_TCON_C\`**（与 RTL 同一套规则）：同名 case/env/checker 文件覆盖、新增 case 添加、本地独有文件保留；覆盖/新增/保留清单照常记录。
 
 - **ppm 等大仿真文件不会随包下载**：在解压目录对应位置用 `mklink /J`（junction，不需管理员）链到本地现有 ppm 文件夹（如 `DV_TCON_C\top\tests\ppm_mix_*`）；路径结构不明确就写 `PPM_链接说明.md` 说明缺什么、链到哪。
-- diff 清单照常产出留档（覆盖了什么/新增了什么/本地独有什么），但**不必停下来等确认**——按合并规则直接执行，汇报里带清单。
 - env/checker 类差异若涉及 cfg_frame 解析，注意 `%b` 二进制口径一致性。
 
 ## 5. 通用纪律
