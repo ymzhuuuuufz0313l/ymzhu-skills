@@ -30,7 +30,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 |---|---|
 | `top/sta/` 各 corner `latest/` 报告（log/rpt/summary/run_summary）、`sdc_pr/` | **覆盖**（服务器 run 产物同步的正主，量大可用 robocopy） |
 | 服务器改过的脚本（pt_setup.tcl / read_design.tcl / run_pt / design.set / deploy 脚本） | **先 diff，有差异才覆盖**，并记录差异内容 |
-| `SYNTHESIS\common\ip_cons\<top>.tcl` | **绝不覆盖**（本地是最新真源）。只 diff，并判定服务器 run 吃到的约束版本：找本代标记（如 `cpuwr_reg_grp`、排除清单、`-to RX_CLK` 的 UTC 行、`U_DPLC_DATA_GEN/*/D*`） |
+| `SYNTHESIS\common\ip_cons\<top>.tcl` | **先 diff 约束差异，逐条评估同不同意——同意的采纳（覆盖/合并进本地），不同意的保留本地并写明理由**。同时判定服务器 run 吃到的约束版本（找本代标记：`cpuwr_reg_grp`、10 分区排除清单、`-to RX_CLK` 的 UTC 行、`U_DPLC_DATA_GEN/*/D*`），用于解读这批报表 |
 | `common\clk_period.tcl` | **不动**（要求 pristine），有变化只汇报 |
 
 覆盖后必出的验证数字（确认上一轮修复是否被服务器吃到）：
