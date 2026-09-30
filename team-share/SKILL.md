@@ -286,6 +286,44 @@ Each article gets its own directory so multiple shared articles can coexist.
 .prow code { font-size: 13px; }
 ```
 
+### 6. 状态跟踪总账 status-tracker（时间线/细节分离组件，2026-09-30 定稿）
+
+**用途**：首页/长文的"简单展示 + 复杂细节"分离。当时间线或摘要列表膨胀成大段密集文字时，拆成两层：展示层只留一句话，细节层用本组件折叠承载。
+
+**结构规则（强制）**：
+- 展示层（时间线/摘要列表）每条只写**一句话**：`<b>标题</b>——一句话结论`，不允许 commit 号/判据/证据链；
+- 细节层 = 本组件，放在**页面最底部**（footer 前），按主题一个 `<details>` 块；
+- **块序 = 严格时间倒序**（最新主题在最上/置顶插入），块内同主题多次更新时旧内容用 `<br><br>` 连接保留（不删历史）；
+- summary 格式：`状态emoji + <span class="st-date">MMDD 或 MMDD-MMDD</span> — 标题`；最新/进行中主题加 `open` 默认展开，其余折叠；
+- 状态 emoji：🔄 进行中 / 🟡 待拍板 / ✅ 完成 / ⚠️ 风险警示；
+- 组件注释里写明维护规则，防止后续维护者把细节回填到展示层。
+
+```html
+<div class="section-title">状态跟踪总账</div>
+<p style="margin:0 0 14px;color:#666;font-size:14px;">时间线只留一句话；完整证据链、commit 号与判据按主题折叠在此，点开即看。</p>
+<style>
+  .st-details details{border:1px solid #e3e6ea;border-radius:8px;margin:0 0 10px;background:#fff;}
+  .st-details summary{cursor:pointer;padding:10px 14px;font-weight:600;font-size:14px;color:#24486e;background:#f5f7fa;border-radius:8px;list-style:none;}
+  .st-details summary::-webkit-details-marker{display:none;}
+  .st-details summary::before{content:"▸ ";color:#5b7da3;}
+  .st-details details[open] summary::before{content:"▾ ";}
+  .st-details .st-body{padding:10px 16px 12px;font-size:13px;line-height:1.75;color:#333;}
+  .st-details .st-date{color:#8aa0b8;font-weight:400;font-size:12px;}
+</style>
+<div class="st-details">
+<details open>
+  <summary>🔄 <span class="st-date">0930</span> — 最新主题标题</summary>
+  <div class="st-body">完整细节：commit 号、判据、证据链……（同主题历史更新用 &lt;br&gt;&lt;br&gt; 追加保留）</div>
+</details>
+<details>
+  <summary>✅ <span class="st-date">0928</span> — 较早主题标题</summary>
+  <div class="st-body">...</div>
+</details>
+</div>
+```
+
+**参考实现**：`team-share-public/hk1v11-synthesis-postpt-practice/index.html`（LATEST 卡一句话时间线 + 页底状态跟踪总账，0930 重构）。零脚本依赖（原生 `<details>`）。
+
 ## 图片 Lightbox（每页必须包含）
 
 任何含图片的独立 HTML 页面都必须带以下 lightbox，读者点击图片后可放大、滚轮缩放、拖拽移动。参考实现：`hk1v11-longcode-420b-verification/debug-log.html`。
