@@ -85,4 +85,6 @@ dc_shell-t -64bit                     # ④ 出现 dc_shell> 提示符即成
 `ps -ef | grep dc_shell`——查残留进程占 license，kill 后重进。
 **license 锁节点**：默认节点报 not enabled 时，指定到跑过综合的节点重试：`bsub -Ip -m node043 csh`（dc_shell 0930 实测 node043 可用）。
 
+**交互探针必须复刻完整 setup 链（0930 探针污染教训）**：在 bsub 节点上做增量精修/what-if 实验时，只 source design.set + clk_period + ip_cons **不够**——必须补齐 `dont_use_all.tcl`（流程禁用 *SFF*/*X05* 等单元族；漏 source 会导致 DC 自由使用禁用单元，实验数字成为"放宽规则的上界"，不代表生产环境）。完整链：design.set → clk_period.tcl → ip_cons → **dont_use_all.tcl** → 目标库 target/link_library 设置 → read_ddc/网表 → 实验。库限制在 `SYNTHESIS/common/tcl_dir/dc/dont_use_all.tcl`。
+
 <!-- ymzhu 2026-09-30 14:10 -->
