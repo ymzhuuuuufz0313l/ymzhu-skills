@@ -63,3 +63,26 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 - 所有说明类 md 文末签名 `<!-- ymzhu YYYY-MM-DD HH:MM -->`（实际时间）。
 - **汇报模板**：① 各包解压到哪、覆盖/新增/保留文件数；② SYNTHESIS 验证数字（SEL-004 / D1D2 / exceptions 关键行 / setup+hold 总账）；③ 服务器约束版本判定（吃到哪一代修复）；④ RTL/DV 合并摘要（覆盖/新增/保留各多少）；⑤ commit hash 与 push 结果。
 - 时间线意识：服务器 run 的时间戳可能**早于本地最新约束修改**——汇报时明确"服务器吃到了哪一代，哪些没吃到"。
+
+## 6. 服务器交互式 EDA 工具启动（bsub -Ip 模式，2026-09-30 dc_shell 实测）
+
+**铁律：EDA 工具（dc_shell/pt_shell 等）不能在登录节点直接跑**——license 只对 bsub 分配的计算节点使能，直接跑报 `Fatal: Design Compiler is not enabled. (DCSH-1)`，或静默卡住等一个等不到的 license。
+
+**正确流程（dc_shell 实例）**：
+
+```csh
+bsub -Ip csh                          # ① 分配交互节点（出现节点上的 csh 提示符）
+cd <工作目录>                          # ② 共享 NFS，路径与登录节点一致（如 rep_dir_0922_1456）
+source /eda/env/syn1709.cshrc         # ③ Synopsys 环境（工具 PATH + license 配置）
+dc_shell-t -64bit                     # ④ 出现 dc_shell> 提示符即成
+```
+
+**泛化**：
+- 其他 Synopsys 工具同模式（pt_shell / formality 等，换最后一步的启动命令）；
+- 项目 wrapper 脚本（如 `run_dc`）= "source 环境文件 + 启动工具" 的封装——交互调试时拆开：先 `bsub -Ip csh`，手动 source 环境，再敲工具命令，便于逐条验证。
+
+**启动慢 ≠ 卡死**：license checkout/初始化可等 1-3 分钟（黑屏光标闪 = 还在等）。超 3-5 分钟另开窗口：
+`ps -ef | grep dc_shell`——查残留进程占 license，kill 后重进。
+**license 锁节点**：默认节点报 not enabled 时，指定到跑过综合的节点重试：`bsub -Ip -m node043 csh`（dc_shell 0930 实测 node043 可用）。
+
+<!-- ymzhu 2026-09-30 14:10 -->
