@@ -57,6 +57,20 @@ ICG（集成时钟门控）本质 = 低电平敏感锁存器（抓 enable）+ �
 
 ---
 
+## 四、输出功能 MUX：手动例化 + dont_touch + false_path 屏蔽（规范）
+
+场景：芯片输出常汇聚多功能 → 输出端是一个 MUX。**若 MUX 任一输入是时钟（或经 CLKAND/CLKOR 输出的钟类信号），整个 MUX 会被综合/工具识别为时钟门控** → MUX 上所有输入（含 selection）全被时序检查——麻烦且通常没有必要。
+
+**机制要点**：CLKAND/CLKOR 与普通 AND/OR 结构相同，**命名是给工具的识别标记**（"我的输出是时钟"）。一个普通功能信号只要经过 CLKAND/CLKOR，就被识别为钟 → 汇入的 MUX 成为钟门控。注意：**同模块内不同实例的层级/命名形态可能并存**（HK1V11：WCK1_ASEL 保留 CLKMUX2X2 子层、DPLC_MUX 已拍平改名），引用须按各自网表实核。
+
+**团队规范（三件套）**：
+1. 输出 MUX **手动例化**（不写 always @(*)，防综合成与或非门后被识别为门控）；
+2. **`set_dont_touch [get_cells MUX实例]`**（防改名/换型号——HK1V11 实例：DPLC 同款 mux 被 PR 改名致探针断）；
+3. SDC 写 **`set_false_path -through MUX/*`** 屏蔽相关检查。
+注意：`-through MUX/*` 到输出 port 属蓝色数据路径形态，Innovus 认；若 MUX 后接**内部 FF**（capture 腿），红色形态 Innovus 不认——此时改用钟对象组（clock_groups）。
+
+---
+
 ## 详细案例存档（HK1V11 仓库）
 
 CHANGES.md 2026-10-08/09 各条；`script/_audit_pt_report_tcl_k3.md`（pt_report 排除失败根因）；`script/_syn_1008_skew_说明.md`（999/哨兵/判读窗）；`script/_review_bkdu_sync_k3.md`/`_qwen.md`（BKDU_SYNC 评审，含 gating recovery 机理引用）；网站 ch11 §12（时钟豁免列表配对方法论）、ch18 §4.2（set_sense 闭环）。
