@@ -6,6 +6,15 @@ post-route 网表下 STA 约束/报表探针的引用稳定性规则与案例。
 
 探针失效、999 哨兵、cell 改名、write_sdc 找不到、约束引用 cell 名、SEL-005、No pin objects matched、PTE-139
 
+## 原理背景：为什么 DC/PR/PT 要喂不同的 SDC（同一文件类型，工具不同文件就要变）
+
+每个工具对 SDC 的理解逻辑不同（知乎·芯思维）：
+- **DC**：直观理解时钟树，自动穿透 mux/分频；未 set_case_analysis 选中的路径不分析 → 综合 SDC 简单
+- **ICC/Innovus**：理解严苛，mux 输入须显式声明，只声明需要的 path（多声明会让 CTS 树加长；多 mux 共享 sel 时声明一点仍可能双路径都分析）→ 后端 SDC 更详细
+- **PT**：CTS 已结束，需**取消部分 case_analysis 让工具都分析**，否则 SDC 膨胀
+- **write_sdc 序列化差异**：同一条命令不同工具的 write_sdc 行为不同（HK1V11 实测：set_sense DC 的 write_sdc 不带、PT 的带）
+推论：一颗芯片必然存在多份 SDC；约束跨 stage 传递必须显式管理（哪个 stage 读哪个文件、哪条命令能存活），不能默认一份通吃。
+
 ---
 
 ## 三条铁律
