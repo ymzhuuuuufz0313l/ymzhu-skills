@@ -69,6 +69,11 @@ ICG（集成时钟门控）本质 = 低电平敏感锁存器（抓 enable）+ �
 3. SDC 写 **`set_false_path -through MUX/*`** 屏蔽相关检查。
 注意：`-through MUX/*` 到输出 port 属蓝色数据路径形态，Innovus 认；若 MUX 后接**内部 FF**（capture 腿），红色形态 Innovus 不认——此时改用钟对象组（clock_groups）。
 
+**坑 ②补充：ps 毛刺的来源与检测层级（HK1V11 2026-10-12 查证）**
+来源五类：①AND 门产钟的使能翻转毛刺（`REG_LD=SCL&WR_EN` 型）②相邻线串扰耦合（ps 级正是串扰形状）③钟 mux 切换瞬间毛刺 ④电源/地弹（SSO）⑤多 bit 计数器译码毛刺。
+检测三层：**STA 层** set_min_pulse_width+report_min_pulse_width——只抓确定性窄脉冲（错相 AND 的 runt、译码毛刺），抓不到串扰/噪声型；**Noise 层** PT SI report_noise——对 victim 钟网络算耦合毛刺高度×宽度 vs noise margin，需要 cmax/ccs 库+含耦合的 SPEF+SI license；**电路/DV 层** SPICE 抽查、DV X 传播。
+HK1V11 查证（2026-10-12）：MPW 仅定义部分钟族（NORMAL/SD/DCLK_DATA/DPLC 0.73-2.0，**RX_CLK/WCLK1_A/I2C/CLKGEN 族未定义**，另有一批 ## 注释的历史行）；**report_min_pulse_width 与 report_noise 全流程零调用**；cmax 库仅局部存在（alib-52 少量 cell）。签核缺口：MPW 报告未跑 + noise 分析未搭建。
+
 ---
 
 ## 详细案例存档（HK1V11 仓库）
