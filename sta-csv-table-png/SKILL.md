@@ -1,9 +1,9 @@
 ---
 name: sta-csv-table-png
-description: 把 PT summary csv（report_setup/hold/sd_busskew.csv 等）渲染成 2M23 to-signoff 网站同款表格 PNG。触发词："抄作业图"、"to-signoff 样式图"、"csv 转表格图"、"setup/hold 结果图"、"skew 表格图"、"照 2M23 的图"。
+description: 把芯片分析数据渲染成网站用 PNG——① PT summary csv → 2M23 to-signoff 同款表格图 ② 功耗/违例模块对比条形图+组成环形图（matplotlib）。触发词："抄作业图"、"to-signoff 样式图"、"csv 转表格图"、"setup/hold 结果图"、"skew 表格图"、"功耗图"、"组成图"、"对比图"、"条形图"、"环形图"、"donut"。
 ---
 
-# sta-csv-table-png：STA summary csv → 2M23 to-signoff 同款表格 PNG
+# sta-csv-table-png：芯片数据 → 网站 PNG（表格图 + 组成图）
 
 ## 目标
 
@@ -53,4 +53,49 @@ description: 把 PT summary csv（report_setup/hold/sd_busskew.csv 等）渲染�
 3. 跑：`& "...script\.venv\Scripts\python.exe" "<脚本>.py"`，确认 ALL PASS。
 4. thumbnail 目检三边完整与配色，交付 `back_ppt/*.png`。
 
-<!-- ymzhu 2026-10-08 17:55 -->
+---
+
+## 二、组成图/对比图模板（matplotlib 条形图+环形图，2026-10-19 新增）
+
+适用于功耗模块对比、违例分布、skew 对比等"两组数据按功能块对齐"或"组成占比"场景。
+
+**模板脚本**：`E:\project\HK1V11\back_ppt\gen_power_composition_charts.py`（直接改数组重跑）
+**参考效果**：ch08-powerpro.html §4.5「功耗组成可视化」
+
+### 颜色系
+
+- **项目 A（主项目）**：青色系 `#1B7A8C`（深）、`#2E9B8C`（浅）
+- **项目 B（对比项目）**：橙色系 `#E8913A`、`#D4600F`
+- **辅助**：`#5B8DB8` 蓝 / `#8B6BB1` 紫 / `#6BAF6B` 绿 / `#C0504D` 红 / `#999999` 灰
+
+### 中文字体
+
+```python
+import matplotlib.font_manager as fm
+for fp in fm.findSystemFonts(fontpaths=['C:/Windows/fonts']):
+    if 'msyh' in fp.lower() or 'simhei' in fp.lower():
+        fm.fontManager.addfont(fp); break
+plt.rcParams['font.family'] = ['Microsoft YaHei', 'SimHei', 'sans-serif']
+plt.rcParams['axes.unicode_minus'] = False
+```
+
+### 图 1：双条形对比图（项目 A vs B 按功能块并排横条）
+
+- `barh` 双色并排（`y±h/2`），青/橙，值标注右侧，B 无对应物填 0 跳过标注
+- `invert_yaxis()` 最大在顶部，去 top/right spine，`grid(axis='x', alpha=0.3)`
+- `dpi=200, bbox_inches='tight'`，figsize≈(14, 8)
+
+### 图 2：双环组成图（donut 并排）
+
+- `wedgeprops=dict(width=0.42)` 标准环宽，`pctdistance=0.78`
+- `autopct='%1.1f%%'` 白色加粗 8pt，标签 9pt
+- **中空标注总功耗**：`ax.text(0, 0, '项目\nXX.XX mW\n@频率', ha='center', fontsize=12, fontweight='bold')`
+- >12 组时合并小项为"其他"；figsize≈(14, 6.5) 两环并排
+
+### 注意
+
+- `matplotlib.use('Agg')` 在 import pyplot 之前
+- 中文标签用 `\n` 控制宽度
+- 需要安装 matplotlib：`pip install matplotlib`
+
+<!-- ymzhu 2026-10-19 16:45 -->
