@@ -1,3 +1,8 @@
+---
+name: digital-backend-pitfalls
+description: 数字后端经验与坑：cell 引用稳定性（post-route 探针/约束）、不同工具喂不同 SDC、ICG 复位机制与两大坑；适用于 PT/DC 脚本编写、skew/setup/hold 报表探针、跨代际约束维护、时钟门控设计。触发词：探针失效、999 哨兵、cell 改名、write_sdc 找不到、SEL-005、No pin objects matched、PTE-139、set_sense、ICG、时钟门控、gating check、stop_propagation。
+---
+
 # digital-backend-pitfalls
 
 数字后端经验与坑：cell 引用稳定性（post-route 探针/约束）、不同工具喂不同 SDC、ICG 复位机制与两大坑。适用于 PT/DC 脚本编写、skew/setup/hold 报表探针、跨代际约束维护、时钟门控设计。
