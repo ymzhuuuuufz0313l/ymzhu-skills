@@ -7,6 +7,7 @@ description: 用户偏好的网页/UI 画风（蓝图工程风 blueprint enginee
 
 > 起源：2026-09-07 team-share-public `hk1v11-lc-cpuwr-history` 首页重构，用户确认"这个画风不错，优先用这个画风"。
 > 参考实现：`E:\project\team-share-public\hk1v11-lc-cpuwr-history\index.html`（可直接打开查看/复制片段）。
+> 组件完整版参考（2026-10-21 全站升级）：`E:\project\team-share-public\hk1v11-synthesis-postpt-practice\`（导航/表格/图片/卡片全组件，见下方"站点组件模板"章）。
 
 ## 使用规则（重要）
 
@@ -37,7 +38,7 @@ description: 用户偏好的网页/UI 画风（蓝图工程风 blueprint enginee
 | 页面底 bg | `#f4f1ea` 暖纸 | `#0e1420` |
 | 卡片 surface | `#fffdf7` | `#161f31` |
 | 正文 text | `#1c2534` | `#e9e5d9` |
-| 次要 muted | `#667180` | `#9aa4b5` |
+| 次要 muted | `#5b6675`（10-21 提对比至 5.2:1） | `#9aa4b5` |
 | 强调 accent（琥珀） | `#b45309` | `#f0a137` |
 | 柔和强调 accent-soft | `#f7e8d4` | `#3a2f1a` |
 | 边线 line | `#ddd6c8` | `#2b3852` |
@@ -70,8 +71,77 @@ description: 用户偏好的网页/UI 画风（蓝图工程风 blueprint enginee
 - **关键信息首屏可见**：阅读引导、当前版本等必须在第一屏（hero 区）出现。
 - 导航条：sticky、mono 品牌字、active 项琥珀底白字。
 
+## 站点组件模板（2026-10-21 全站升级定稿，加分项）
+
+> 参考实现（活模板，可直接抄）：`E:\project\team-share-public\hk1v11-synthesis-postpt-practice\`
+> `css/style.css`（组件唯一事实源）· `js/site.js`（导航/TOC/表格/代码块增强）· `js/lightbox.js`（图片查看器）。
+> 以下组件经 8 成员 UI 审查 3 轮对账验证（24 份底稿在 HK1V11/script/_chapter_viz/uireview*.md）。
+
+### Token 增补（在原配色表之上）
+
+- `--muted` 浅色改 `#5b6675`（对比度 5.2:1 过 AA）；`--warn` 从 accent 拆出：浅 `#8a5305` / 深 `#eab308`（警告≠强调，避免琥珀泛滥）。
+- 动效时序三档：`--t-fast: .12s / --t-med: .18s / --t-slow: .28s`，全站 transition 统一引用。
+- `body { font-variant-numeric: tabular-nums }` 全局表格数字对齐；`.article > p { max-width: 46em }`（CJK ≈46 字/行）。
+
+### 顶部导航（两行 + 混合下拉 + 抽屉）
+
+- **两行结构**：行 1 = 主流程平铺链接 + 搜索（右，`margin-left:auto`）；行 2 = 下拉组（实战复盘 ▾ / 学习路径 ▾）+ GitHub（右）。`flex-direction: column`，行 2 与行 1 同字号同色（不做次级灰小字——实测显乱）。
+- **混合下拉**（比纯 hover 好，触屏可用的主流做法）：CSS `:hover/:focus-within` 即开 + **caret ▾ 单独 click 置顶**（`.open` 类钉住）；label 点击仍导航；Esc/点外关闭；`aria-expanded`。
+- **移动端（≤768px）**：hamburger 三线钮（边框 `--muted`）→ 全导航抽屉（absolute 于 sticky navbar 下、`body.nav-open` 切换）；抽屉内下拉组静态展开；**与 TOC 抽屉互斥**；点链接/点外自动收。
+- TOC 侧栏：sticky + IntersectionObserver scrollspy 高亮 + **当前项自动滚入**（用户手滚目录后 4s 内让路：程序滚动打 `__progMark` 标记区分）；移动端右下角"☰ 本页目录" FAB 唤出浮层。
+
+### 表格（数据站核心加分项）
+
+```js
+// 渲染后统一后处理（site.js）：滚动容器 + 长表 sticky + 数字列右对齐
+art.querySelectorAll('table').forEach(t => {
+  const rows = t.querySelectorAll('tr');
+  const wrap = document.createElement('div');
+  wrap.className = 'table-wrap' + (rows.length > 40 ? ' table-tall' : '');
+  t.parentNode.insertBefore(wrap, t); wrap.appendChild(t);
+  // 纯数字列（≥80% 单元格命中）→ th/td 加 .num（右对齐 + mono）
+  const NUM = /^[-−+]?[\d,.]+\s*(?:%|MHz|GHz|ns|ps|ms|µs|µW|nW|mW|kW|W|µm²|µm|nm|KB|MB|GB|TB|G|M|k)?$/;
+});
+```
+```css
+.table-wrap { overflow-x: auto; }                       /* 宽表横滚，窄表满宽不受影响 */
+.table-wrap > table { margin: 0; min-width: 100%; width: auto; }
+.table-wrap.table-tall { max-height: 68vh; overflow: auto; }   /* >40 行：内部滚动 */
+.table-wrap.table-tall thead th { position: sticky; top: 0; background: var(--chip); box-shadow: 0 1px 0 var(--line); }
+th.num, td.num { text-align: right; font-family: var(--font-mono); font-size: 13.5px; }
+/* 横线化：去竖线留横线 + 斑马 0.035（比全边框网格更现代，Stripe 风） */
+th, td { border: none; border-top: 1px solid var(--line); }
+th { border-top: none; border-bottom: 2px solid var(--line); }
+```
+- **代码块**：`pre[data-lang]::before` 右上角语言标签（读 `code.language-*`）；` ```text/log ` 加 `.log-view`（浅纸底 + muted 字）与真代码（深墨底）区分；右下角 hover 浮现 **copy 按钮**（Clipboard API + `execCommand` 降级，失败诚实显示"复制失败"）；行高 1.5。
+
+### 图片（lightbox 查看器 + 纸色图表，双加分项）
+
+- **lightbox v2**：点击全屏 → **滚轮以光标为锚缩放**（0.5–12×，`offsetLeft/Top` 是布局值不受 transform 影响）+ **拖动平移** + **双指捏合**（增量中点锚定，复用同一 `zoomAt(cx,cy,f)`）+ 双击/`0` 复位 + ←/→ 换图 + ESC/×/点空白关（**点图片本体不关**——点击即关是反模式）。`show()/hide()` 必须清指针状态（防幽灵捏合）。正文图 hover 显示 **🔍 角标**（JS 包 `.lb-thumb` span，img 是 replaced element 不能挂伪元素）。
+- **图表配色 = 站点色板**（消灭白底 matplotlib 孤岛）：
+```python
+PAPER='#f4f1ea'; INK='#1c2534'; MUTED='#5b6675'; C_A='#0e7490'; C_B='#b45309'
+plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':PAPER,
+  'savefig.facecolor':PAPER,'xtick.color':MUTED,'axes.edgecolor':'#c9bfa8'})
+# savefig(..., facecolor=PAPER)；楔形边 SURFACE #fffdf7；网格 #ddd6c8
+```
+- PIL 表格图：fork 共享渲染函数仅换色板（墨头条+纸底+语义行底：焦点行 `#e8edfb` 淡蓝、次焦点 `#f7e8d4` 柔琥珀、关键列 `#065f70` 深绿加粗），**数据行逐行照抄禁改**，超采样 `S=4` 防缩放糊（字体=size×S，等效字号=字带px×显示宽/图宽）。
+- 暗色主题：纸底 PNG 加 surface 框线过渡（`.lb-thumb` 暗色 padding+border+圆角）。
+
+### 卡片系统（组件类收敛，禁 inline 泛滥）
+
+- `chapter-card` 基类 + `.card-span`（通栏）/`.card-hero`（大数卡，`.title` 32px）/`.card-center`/`.card-mini`（`.title` 20px）；**非链接卡 `:not(a):hover` 不升起**（升起误导点击）。
+- **badge 方向语义**：纯百分比 delta 加箭头（改善 `▼ −97.6%` badge-ok），**比值（×1.35）不加箭头**；带文字标签（"hold −96.8%"）不加。
+- tag 语义变体：`.tag-warn/.tag-bad/.tag-info/.tag-muted`（中性标签不占用琥珀强调色）。
+- 学习路径/入口页：8 步 `card-mini` 网格（STEP N + 标题 + 一句话），锚点跳详情。
+
 ## 反模式（避免）
 
 - ❌ 多版本变更堆成一长段文字（用户明确批评过："简介内容太多太多了"）
 - ❌ 通用 AI 风：Inter/Roboto、紫渐变、千篇一律卡片
 - ❌ teal/slate 旧配色（本站 2026-09-07 前的样子）
+- ❌ 列表型卡片墙（镜像 TOC 无增量信息，用户否决过 ch10 21 则卡墙）
+- ❌ 点击图片本体即关闭 lightbox（应为缩放平移，点空白才关）
+- ❌ 白底 matplotlib 图直接嵌暖纸站（视觉孤岛，必须换站色板）
+
+<!-- ymzhu 2026-10-21 13:40 -->
