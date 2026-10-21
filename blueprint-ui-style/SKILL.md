@@ -11,6 +11,11 @@ description: 用户偏好的网页/UI 画风（蓝图工程风 blueprint enginee
 
 ## 使用规则（重要）
 
+0. **做网站时的 skill 分工与优先级（2026-10-21 审查定稿）**——本 skill 是**视觉语言与组件的唯一权威**（用户明确偏好 = 最高优先级来源）：
+   - `frontend-design`（host 内建，不可改）：同时被触发时**只作工程质量清单**（可读性/可达性/代码质量），**不得**引入新配色/新字体/新视觉方向——创意发散以本 skill 的 token 与组件为边界；两者矛盾时一律按本 skill。
+   - `fireworks-tech-graph`：给本画风站点画内嵌图时，**必须改用站点 `:root` 色板**（纸底 `#f4f1ea`/墨 `#1c2534`/琥珀 `#b45309`/深青 `#0e7490`），禁用其自带 Style 3 深蓝（delay_skew v1 教训）；仅独立交付的图才用 skill 自带样式。
+   - `sta-csv-table-png`：目标是本画风站点（如 practice 站）→ 用 paper 色板 fork 模式（模板 `E:\project\HK1V11\back_ppt\gen_power_compare_hk11_site.py`，数据行逐行照抄）；目标是 2M23 指南站 → 保持 teal 同款不冲突。
+   - `gpt-image-2-style-library`：位图插画与本工程画风无关，做网站默认不调用。
 1. **任何网页/UI/HTML 报告任务，默认优先采用本画风**，除非用户明确要求其他风格。
 2. **过程中必须提示用户确认**：
    - 动手前先一句话说明将采用蓝图工程风（若任务大，可先给设计要点再确认）；
@@ -144,4 +149,4 @@ plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':
 - ❌ 点击图片本体即关闭 lightbox（应为缩放平移，点空白才关）
 - ❌ 白底 matplotlib 图直接嵌暖纸站（视觉孤岛，必须换站色板）
 
-<!-- ymzhu 2026-10-21 13:40 -->
+<!-- ymzhu 2026-10-21 13:42 -->

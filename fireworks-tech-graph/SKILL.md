@@ -484,6 +484,8 @@ Use `$SKILL_ROOT/scripts/generate-diagram.sh` by default. Load `$SKILL_ROOT/refe
 
 Load the matching `$SKILL_ROOT/references/style-N-*.md` for exact color tokens and SVG patterns.
 
+**Site-embedded override (2026-10-21)**: when the diagram will be embedded in a site that already has a house style — specifically a `blueprint-ui-style` site (warm paper `#f4f1ea` + ink `#1c2534` + amber `#b45309`) — do NOT use the canned styles above (Style 3's dark navy clashes; delay_skew v1 lesson). Instead take the destination site's `:root` design tokens as the style reference: paper canvas, ink lines/text, amber accent, teal `#0e7490` for data paths, `#ddd6c8` grid. Canned styles apply only to standalone deliverables with no host site.
+
 ## Style Selection
 
 **Default**: Style 1 (Flat Icon) for most diagrams. Load `$SKILL_ROOT/references/style-diagram-matrix.md` for detailed style-to-diagram-type recommendations.
@@ -497,3 +499,5 @@ These patterns appear frequently — internalize them:
 **Agent Memory Types**: Sensory (raw input) → Working (context window) → Episodic (past interactions) → Semantic (facts) → Procedural (skills)
 **Multi-Agent**: Orchestrator → [SubAgent A / SubAgent B / SubAgent C] → Aggregator → Output
 **Tool Call Flow**: LLM → Tool Selector → Tool Execution → Result Parser → LLM (loop)
+
+<!-- ymzhu 2026-10-21 13:42 -->

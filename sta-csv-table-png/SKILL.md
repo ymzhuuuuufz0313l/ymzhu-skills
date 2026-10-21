@@ -5,7 +5,11 @@ description: 把芯片分析数据渲染成网站用 PNG——① PT summary csv
 
 # sta-csv-table-png：芯片数据 → 网站 PNG（表格图 + 组成图）
 
-## 目标
+## 目标（先做目标站点分流，2026-10-21）
+
+**目标站点决定色板**：
+- 图进 **2M23 指南站**（synthesis-integration-flow-guide）→ 走本 skill 主流程（teal 同款）。
+- 图进 **暖纸站点**（blueprint-ui-style 画风，如 hk1v11-synthesis-postpt-practice）→ **改用 paper 色板 fork 模式**：表格图模板 `E:\project\HK1V11\back_ppt\gen_power_compare_hk11_site.py`（复用 `_gen_be_review_images.py` 的字体/混排助手但本地渲染：墨头条+纸底+语义行底），**数据行逐行照抄禁改**；matplotlib 组成图参考 `back_ppt/gen_power_composition_charts.py` v2 的 rcParams 站点色板。禁止把 teal 同款图直接嵌入暖纸站（视觉孤岛）。
 
 把 `report_setup.csv` / `report_hold.csv` / `report_sd_busskew.csv` 等 PT summary csv
 渲染成与 team-share-public `synthesis-integration-flow-guide` 网站
@@ -98,4 +102,4 @@ plt.rcParams['axes.unicode_minus'] = False
 - 中文标签用 `\n` 控制宽度
 - 需要安装 matplotlib：`pip install matplotlib`
 
-<!-- ymzhu 2026-10-19 16:45 -->
+<!-- ymzhu 2026-10-21 13:42 -->
