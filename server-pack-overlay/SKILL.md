@@ -10,7 +10,10 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 ## 0. 包定位与目录映射
 
-1. 压缩包通常在 `C:\Users\zhuyanming\Downloads\`，不在项目根——先找到。
+1. **包在服务器上，agent 用 dsh-ssh 插件自己拉取（不再依赖用户手动下载）**：
+   - 定位：`ssh_exec`（alias=IC_EDA）`ls -lh /home/ICer/work/HK1V11/script/PACK_TAR_*.tar.gz`
+   - 拉取：`ssh_download` remotePath=`/home/ICer/work/HK1V11/script/PACK_TAR_<ver>_<date>.tar.gz` → localPath=`C:\Users\zhuyanming\Downloads\`
+   - 用户已手动下载过（包已在 Downloads）则跳过拉取，直接进解压。
 2. **编号与内容的对应以包内实际路径自证**（解开后看包内是 `SYNTHESIS/`、`HDL/` 还是 `DV_TCON_C/`），不要凭编号顺序猜。
 3. 解压目标（历史惯例命名，放 `E:\project\HK1V11\script\` 下）：
    - SYNTHESIS → `script\_syn_<ver>\`（如 `_syn_0924v2`）
@@ -23,7 +26,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 - 包内路径带 `../../../` 前缀、含 `::` 等非法字符、超长路径 → **Windows tar 解不了，用 python tarfile 剥离 `../` 解出**。
 - 无法解析的 symlink（指向包外/他人目录）跳过并记录，不强解。
-- 包实际位置常在 Downloads，包内结构形如 `XXW_PRJ01/HK1V11/designer/<组>/<人>/HK1V11/...`。
+- 包内结构形如 `XXW_PRJ01/HK1V11/designer/<组>/<人>/HK1V11/...`，编号与内容的对应以包内实际路径自证。
 
 ## 2. SYNTHESIS 包
 
@@ -64,27 +67,29 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 - **汇报模板**：① 各包解压到哪、覆盖/新增/保留文件数；② SYNTHESIS 验证数字（SEL-004 / D1D2 / exceptions 关键行 / setup+hold 总账）；③ 服务器约束版本判定（吃到哪一代修复）；④ RTL/DV 合并摘要（覆盖/新增/保留各多少）；⑤ commit hash 与 push 结果。
 - 时间线意识：服务器 run 的时间戳可能**早于本地最新约束修改**——汇报时明确"服务器吃到了哪一代，哪些没吃到"。
 
-## 6. 服务器交互式 EDA 工具启动（bsub -Ip 模式，2026-09-30 dc_shell 实测）
+## 6. 服务器 EDA 工具启动（dsh-ssh 插件执行，2026-09-30 dc_shell 实测，2026-10-22 修订）
 
-**铁律：EDA 工具（dc_shell/pt_shell 等）不能在登录节点直接跑**——license 只对 bsub 分配的计算节点使能，直接跑报 `Fatal: Design Compiler is not enabled. (DCSH-1)`，或静默卡住等一个等不到的 license。
+**服务器操作一律走 dsh-ssh 插件**：alias=IC_EDA（root@192.168.206.128，key 免密，tags `[eda, hk1v11]`），先 `ssh_list` 确认再执行。路径约定：服务器项目根 `/home/ICer/work/HK1V11/`（与本地 `E:\project\HK1V11` 同构）；**本机（dsh host）的文件/命令用本地工具，ssh_* 只针对远端**，两类路径勿混。
 
-**正确流程（dc_shell 实例）**：
+**铁律：EDA 工具（dc_shell/pt_shell 等）不能在登录节点直接跑**——license 只对 bsub 分配的计算节点使能，直接跑报 `Fatal: Design Compiler is not enabled. (DCSH-1)`，或静默卡住等一个等不到的 license。所有 EDA 命令必须经 bsub 到计算节点执行。
 
-```csh
-bsub -Ip csh                          # ① 分配交互节点（出现节点上的 csh 提示符）
-cd <工作目录>                          # ② 共享 NFS，路径与登录节点一致（如 rep_dir_0922_1456）
-source /eda/env/syn1709.cshrc         # ③ Synopsys 环境（工具 PATH + license 配置）
-dc_shell-t -64bit                     # ④ 出现 dc_shell> 提示符即成
-```
+**三种执行模式（按任务时长选）**：
 
-**泛化**：
+| 模式 | ssh_exec 命令 | 适用 |
+|---|---|---|
+| ① 批量作业 | `cd <工作目录> && bsub < job.sh` | 长任务（小时级综合/PT）：提交即返回，`bjobs` 轮询状态 |
+| ② 非交互计算节点执行 | `cd <工作目录> && bsub -I 'source /eda/env/syn1709.cshrc && dc_shell -f run.tcl'` | 短中任务（分钟级）：输出同会话完整返回，`timeoutMs` 设大（最大 600000） |
+| ③ 交互探针（命令管道） | `printf 'source /eda/env/syn1709.cshrc\ndc_shell -f probe.tcl\n' \| bsub -Ip csh` | 节点上 what-if 探针；探针 tcl 先 `ssh_upload`（或 heredoc）写入服务器再执行 |
+
+泛化：
 - 其他 Synopsys 工具同模式（pt_shell / formality 等，换最后一步的启动命令）；
-- 项目 wrapper 脚本（如 `run_dc`）= "source 环境文件 + 启动工具" 的封装——交互调试时拆开：先 `bsub -Ip csh`，手动 source 环境，再敲工具命令，便于逐条验证。
+- 项目 wrapper 脚本（如 `run_dc`）= "source 环境文件 + 启动工具" 的封装——交互调试时拆开：先 bsub 内 source 环境，再敲工具命令，便于逐条验证；
+- Web 终端（GUI「SSH」入口）是给**人**用的全交互 shell；agent 一律用 ssh_exec，上述三档覆盖绝大多数 EDA 场景。
 
-**启动慢 ≠ 卡死**：license checkout/初始化可等 1-3 分钟（黑屏光标闪 = 还在等）。超 3-5 分钟另开窗口：
-`ps -ef | grep dc_shell`——查残留进程占 license，kill 后重进。
-**license 锁节点**：默认节点报 not enabled 时，指定到跑过综合的节点重试：`bsub -Ip -m node043 csh`（dc_shell 0930 实测 node043 可用）。
+**启动慢 ≠ 卡死**：license checkout/初始化可等 1-3 分钟（黑屏光标闪 = 还在等）。超 3-5 分钟另开会话 ssh_exec：
+`ps -ef | grep dc_shell | grep -v grep`——查残留进程占 license，kill 后重进。
+**license 锁节点**：默认节点报 not enabled 时，指定到跑过综合的节点重试：`bsub -I -m node043 'source /eda/env/syn1709.cshrc && dc_shell -f run.tcl'`（dc_shell 0930 实测 node043 可用）。
 
 **交互探针必须复刻完整 setup 链（0930 探针污染教训）**：在 bsub 节点上做增量精修/what-if 实验时，只 source design.set + clk_period + ip_cons **不够**——必须补齐 `dont_use_all.tcl`（流程禁用 *SFF*/*X05* 等单元族；漏 source 会导致 DC 自由使用禁用单元，实验数字成为"放宽规则的上界"，不代表生产环境）。完整链：design.set → clk_period.tcl → ip_cons → **dont_use_all.tcl** → 目标库 target/link_library 设置 → read_ddc/网表 → 实验。库限制在 `SYNTHESIS/common/tcl_dir/dc/dont_use_all.tcl`。
 
-<!-- ymzhu 2026-09-30 14:10 -->
+<!-- ymzhu 2026-10-22 15:22 -->

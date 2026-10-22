@@ -109,6 +109,12 @@ description: Maintain user workflow preferences, change logs, and server handoff
    - 肉眼 Review 建议
    - 回传注意事项
 4. 向用户展示 `REVIEW.md` 内容。
+5. **用户确认后，用 dsh-ssh 插件执行回传**（不再手动上传）：
+   - 项目已配置 dsh-ssh 主机时（如 HK1V11 → alias=IC_EDA，服务器项目根 `/home/ICer/work/HK1V11/`，与本地项目同构）agent 直接执行；未配置则提醒用户先添加主机，再按本步执行。
+   - 推荐做法：本地 tar 打包变更目录（保留相对路径）→ `ssh_upload` 传单文件 → `ssh_exec` 在服务器解压 → `ls -la` / 抽查 `diff` 验证。
+   - 少量文件也可直接逐个 `ssh_upload`。
+   - **不直接覆盖服务器重要目录**：目标目录已有内容且有变化时先备份（带日期的 backup 目录），再覆盖。
+   - 回传后用 `ssh_exec`（`ls -lh`、`md5sum`）验证服务器侧状态并向用户汇报。
 
 **REVIEW.md 格式**：
 
@@ -174,5 +180,6 @@ description: Maintain user workflow preferences, change logs, and server handoff
 - 如果用户没有说明修改原因，可以标注"原因：未说明"并提醒用户补充。
 - `REVIEW.md` 是临时文件，每次生成会覆盖旧内容。
 - `CHANGES.md` 是累计日志，按日期追加，不删除历史记录。
+- **服务器操作一律走 dsh-ssh 插件**（ssh_exec / ssh_upload / ssh_download），本机文件与命令用本地工具；两类路径勿混，传输/覆盖前确认目标。
 
-<!-- ymzhu 2026-09-20 11:04 -->
+<!-- ymzhu 2026-10-22 15:22 -->
