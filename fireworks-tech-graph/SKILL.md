@@ -459,9 +459,33 @@ python3 -c "import cairosvg; cairosvg.svg2png(url='file.svg', write_to='/tmp/tes
 - ❌ Missing `</svg>` at end
 - ❌ Element with `filter` near viewBox edge — filter region extends 20% (default) or more beyond bbox; if that region exceeds viewBox, Chrome/cairosvg clip the filter rendering AND can drop the element's own stroke on that side. Keep filtered elements at least `max(20% of element size, shadow blur radius × 3)` away from viewBox edges, or omit the filter.
 
+## Animated SVG (for web-facing diagrams)
+
+**Requirement (2026-10-26, ymzhu)**: when the model judges a diagram to be suitable for animation — and the user asks for it, or the diagram is destined for a website — also produce an animated SVG to increase its 观赏性/可视化 (visual appeal). Typical candidates: large register maps / address tables / beat-regroup grids with a natural top→bottom reading order and clear highlight points (new/changed fields, summary boxes).
+
+### Rules
+
+1. **Pure CSS only**: all animation via an in-SVG `<style>` block (`@keyframes` + `animation`). No `<script>`, no external resources. Must play when embedded via `<img>` (browser CSS-in-SVG; SMIL not required).
+2. **Zero data change**: every `<text>` content, geometry, color, and `width/height/viewBox` must be identical to the static source. Animation may only ADD `<g>` grouping wrappers and the `<style>` block.
+3. **Final state = static diagram**: reveal animations use `animation-fill-mode: forwards`; infinite pulses are opacity-only and subtle. Once settled, the rendered picture is indistinguishable from the static version.
+4. **Two-tier breathing (recommended pattern)**:
+   - **Row reveal**: wrap each structural unit (row / beat / band) in `<g class="row" style="animation-delay: N×0.03s">`. CSS: `.row { opacity:0; animation: rowIn 0.4s ease forwards; }` / `@keyframes rowIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: none; } }`. Titles/headers/legends get `<g class="head">` (delay 0).
+   - **Key-point breathing**: wrap the rows/cells the viewer should notice in extra groups with a gentle infinite opacity pulse, starting after the reveal (~4s): whole row `.chgrow` (opacity 1↔0.5, 2.4s) + key cell `.chg` (1↔0.45, 2s). Hierarchy: the row breathes, the key field breathes harder.
+   - **Never stack two animations on the same property of the same element**: a finished `forwards` animation wins the cascade and kills the pulse. Use nested groups (outer = reveal, inner = pulse).
+5. **Deterministic transform**: for large flat SVGs do not hand-edit. Write a Python script that locates structural units by label, wraps them in `<g>`, and injects `<style>`; save the script next to the output (re-runnable, idempotent).
+6. **Validation (mandatory, all six)**: XML well-formed; `<text>` multiset equality static vs animated; no `<script>`; keyframes present; `viewBox` identity; structural counts (row/head/chg groups) as intended. Optional: cairosvg pixel-compare of final state.
+7. **Site integration**: keep the static file as fallback; serve the animated copy from a subfolder (e.g. `images/anim/`) and point the page's `<img>` at it. Mention both in the page note.
+
+### When NOT to animate
+
+- One-off / offline deliverables (PNG-only pipelines), quick prototypes
+- Diagrams without a natural reading order or highlight points (dense free-form layouts)
+- When the user has not asked and the diagram is not web-facing
+
 ## Output
 
 - **Default**: `./[derived-name].svg` and `./[derived-name].png` in current directory
+- **Web-facing**: additionally `./[derived-name]_anim.svg` (or `anim/[derived-name].svg`) when the Animated SVG rules above apply
 - **Custom**: user specifies path with `--output /path/` or `输出到 /path/`
 - **PNG export**: see **SVG → PNG Conversion** below
 
@@ -500,4 +524,4 @@ These patterns appear frequently — internalize them:
 **Multi-Agent**: Orchestrator → [SubAgent A / SubAgent B / SubAgent C] → Aggregator → Output
 **Tool Call Flow**: LLM → Tool Selector → Tool Execution → Result Parser → LLM (loop)
 
-<!-- ymzhu 2026-10-21 13:42 -->
+<!-- ymzhu 2026-10-26 16:12 -->
