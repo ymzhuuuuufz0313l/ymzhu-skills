@@ -110,7 +110,7 @@ Each article gets its own directory so multiple shared articles can coexist.
 
    **动画 SVG（站点配图动画，2026-10-26 用户定稿）**
 
-   站点配图若被判定适合动画（有自上而下阅读顺序、有明确高亮点的寄存器/地址大图，拍重组网格，多阶段流程/时序图等），除静态 SVG 外**必须**再产出动画 SVG 以增加观赏性/可视化——制作与验收规范见 `fireworks-tech-graph` skill「Animated SVG」条款（纯 CSS 无 script、零数据改动、终态=静态图、行级渐入 + 关键点两层呼吸、六项强制验收、确定性变换脚本）。站点集成约定：动画版放 `images/anim/`（或 `<name>_anim.svg`），静态原版保留为 fallback，页面 `<img>` 指向动画版；纯 CSS 动画 SVG 在 `<img>` 与 lightbox 内均可正常播放。
+   站点配图若被判定适合动画（有自上而下阅读顺序、有明确高亮点的寄存器/地址大图，拍重组网格，多阶段流程/时序图等），除静态 SVG 外**必须**再产出动画 SVG 以增加观赏性/可视化——制作与验收规范见 `fireworks-tech-graph` skill「Animated SVG」条款（纯 CSS 无 script、零数据改动、终态=静态图、行级渐入 + 关键点强调特效、六项强制验收、确定性变换脚本）。**特效不限于呼吸，由模型按图的内容自选**（呼吸 / 流动虚线 / 扫描高亮 / 关键元素缩放进入 / 填充色过渡等），目的是提高可视化程度；呼吸是默认最通用选项。站点集成约定：动画版放 `images/anim/`（或 `<name>_anim.svg`），静态原版保留为 fallback，页面 `<img>` 指向动画版；纯 CSS 动画 SVG 在 `<img>` 与 lightbox 内均可正常播放。
 
    For **single-page** articles:
    - Include a **floating table of contents (TOC)** on the left side (desktop) or a collapsible drawer (mobile):
