@@ -123,6 +123,7 @@ th { border-top: none; border-bottom: 2px solid var(--line); }
 ### 图片（lightbox 查看器 + 纸色图表，双加分项）
 
 - **lightbox v2**：点击全屏 → **滚轮以光标为锚缩放**（0.5–12×，`offsetLeft/Top` 是布局值不受 transform 影响）+ **拖动平移** + **双指捏合**（增量中点锚定，复用同一 `zoomAt(cx,cy,f)`）+ 双击/`0` 复位 + ←/→ 换图 + ESC/×/点空白关（**点图片本体不关**——点击即关是反模式）。`show()/hide()` 必须清指针状态（防幽灵捏合）。正文图 hover 显示 **🔍 角标**（JS 包 `.lb-thumb` span，img 是 replaced element 不能挂伪元素）。
+- **动画 SVG**：纯 CSS 动画 SVG（`fireworks-tech-graph`「Animated SVG」条款）在 `<img>`/lightbox 内正常播放；站点配图若判定可动画（寄存器大图/拍重组网格等），静态版保留为 fallback，`<img>` 指向 `anim/` 子目录动画版（2026-10-26）。
 - **图表配色 = 站点色板**（消灭白底 matplotlib 孤岛）：
 ```python
 PAPER='#f4f1ea'; INK='#1c2534'; MUTED='#5b6675'; C_A='#0e7490'; C_B='#b45309'
