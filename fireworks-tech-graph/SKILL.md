@@ -466,7 +466,7 @@ python3 -c "import cairosvg; cairosvg.svg2png(url='file.svg', write_to='/tmp/tes
 ### Rules
 
 1. **Pure CSS only**: all animation via an in-SVG `<style>` block (`@keyframes` + `animation`). No `<script>`, no external resources. Must play when embedded via `<img>` (browser CSS-in-SVG; SMIL not required).
-2. **Zero data change**: every `<text>` content, geometry, color, and `width/height/viewBox` must be identical to the static source. Animation may only ADD `<g>` grouping wrappers and the `<style>` block.
+2. **Zero data change**: every `<text>` content, geometry, color, and `width/height/viewBox` must be identical to the static source. Animation may only ADD: `<g>` grouping wrappers, the `<style>` block, a `<defs>` gradient, at most one decorative sweep band (`<rect class="shine">`, must be off-canvas / opacity 0 in its rest phase), and a `class` attribute on existing elements (effect targeting). 不得改动既有元素的 text/几何/颜色/opacity 默认值。
 3. **Final state = static diagram**: reveal animations use `animation-fill-mode: forwards`; infinite pulses are opacity-only and subtle. Once settled, the rendered picture is indistinguishable from the static version.
 4. **Effects — model decides (2026-10-26: 特效不限于呼吸，按图的内容自选，目的是提高可视化程度)**. 分三档（2026-10-26 用户定稿：入场动画一次性、不循环；常驻强调必选一个 infinite；扫描/缩放/填充是点缀）:
    - **入场（一次性，`forwards`，不循环）**：
@@ -478,8 +478,12 @@ python3 -c "import cairosvg; cairosvg.svg2png(url='file.svg', write_to='/tmp/tes
      - *Flow / dash march*: `stroke-dasharray` + animated `stroke-dashoffset` on connectors/arrows — conveys direction on data-flow / pipeline / sequence diagrams.
    - **可选点缀（一次性或短循环）**：
      - *Fill transition*: key cell fill animates neutral→highlight→neutral once after the reveal — the settled color must equal the static color.
+   - **常驻动效实例（2026-10-26 实证，hk1v11 站点 6 图，全部通过六项验收）**：
+     - *扫光循环（shine sweep）*：低透明度暖色渐变带周期性扫过整图——`<defs>` 线性渐变（stop-opacity 0→0.18→0）+ 一个 `<rect class="shine">`（高度≈图高 17%）放 `</svg>` 前；CSS `@keyframes shineSweep` 用 `translateY`（竖图自上而下）/ `translateX`（横图自左而右）从 `-band` 扫到 `W/H`，周期 6s（扫掠 ≈2.5s + 出画静息 ≈3.1s）。**静息段带在画外 = 终态即静态图**；呼吸等常驻特效同时在线，静息不构成空档。
+     - *边框呼吸（border breathing）*：高亮/门禁盒的 `stroke-opacity` 1↔0.4 脉冲（2.4s ease-in-out，与行呼吸同拍 4s 起）——给汇总盒/门禁框持续存在感。
+     - *门禁/标记脉冲（gate pulse）*：特殊标记格（如 checksum 特殊地址黄格）`fill-opacity` 1↔0.45 脉冲（2s）——节点级常驻动效，比整行呼吸更聚焦。
    - **Hard invariants (any effect choice)**: infinite effects stay subtle and touch only `opacity` / `transform` / `filter` / `stroke-dashoffset` / looping `fill`; settled state == static diagram; never two animations on the same property of one element (a finished `forwards` animation wins the cascade and kills the later one) — use nested groups (outer = reveal, inner = effect); prefer compositor-friendly properties (opacity/transform) on large maps.
-5. **Always-firing effects are mandatory (2026-10-26, ymzhu)**: 站点图片常在页面下半部，用户滚动到图时，一次性 load-time reveal 早已播完——相当于没做。因此每份动画 SVG **必须包含至少一个常驻型 `infinite` 特效**——即**呼吸 / 流动虚线这类无长静息的持续运动，周期 2–4s**，用户任何时候滚到图都必须立刻看到在动。**入场类特效（row reveal / 缩放进入 / 扫描扫掠 / 填充过渡）都是一次性装饰：不循环、不需要 infinite 配置、也不计入本规则的要求**（2026-10-26 用户定稿：入场动画不需要循环，没有必要；扫描甚至不需要加 infinite）。
+5. **Always-firing effects are mandatory (2026-10-26, ymzhu)**: 站点图片常在页面下半部，用户滚动到图时，一次性 load-time reveal 早已播完——相当于没做。因此每份动画 SVG **必须包含至少一个常驻型 `infinite` 特效**——**无长静息的持续运动（呼吸 / 流动虚线 / 边框呼吸 / 门禁脉冲，周期 2–4s）**；**扫光这类周期型（≈6s、出画静息 ≤3s）必须与一个无静息常驻特效叠加**，用户任何时候滚到图都必须立刻看到在动。**入场类特效（row reveal / 缩放进入 / 扫描扫掠 / 填充过渡）都是一次性装饰：不循环、不需要 infinite 配置、也不计入本规则的要求**（2026-10-26 用户定稿：入场动画不需要循环，没有必要；扫描甚至不需要加 infinite）。
 6. **Deterministic transform**: for large flat SVGs do not hand-edit. Write a Python script that locates structural units by label, wraps them in `<g>`, and injects `<style>`; save the script next to the output (re-runnable, idempotent).
 7. **Validation (mandatory, all six)**: XML well-formed; `<text>` multiset equality static vs animated; no `<script>`; keyframes present; `viewBox` identity; structural counts (row/head/chg groups) as intended. Optional: cairosvg pixel-compare of final state.
 8. **Site integration**: keep the static file as fallback; serve the animated copy from a subfolder (e.g. `images/anim/`) and point the page's `<img>` at it. Mention both in the page note.
