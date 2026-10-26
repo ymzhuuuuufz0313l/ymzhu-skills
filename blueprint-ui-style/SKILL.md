@@ -145,7 +145,7 @@ plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':
   - 特效优先服务可视化：数据流方向（行进虚线）、峰值/关键值（柔光脉冲）、对比对（扫光带限定 clip）、代际演进（时间轴进度带逐段填充）。
 - **长页面下方图问题（关键）**：入场动画在加载时播完、用户滚到时看不到 → site.js 加 **IntersectionObserver 滚动重播**：首屏外 `img[src$=".svg"]` 首进视口前 240px 时 `img.src = base + '?v=' + Date.now()`（query 强制 `<img>` 内 SVG 重渲染=重播）+ `loading="lazy"`；首屏内图不重播。
 - **数据纪律**：数值从源脚本 **ast 逐字转录**（禁手抄），生成后双向核对（单元格数/`<text>` 节点数/扇区数逐一相等，含 −/→/— 码位）；数据表图尾零要跟 PNG 显示一致（`fmt_num` 去尾零口径）。环形图免手算弧线：`<circle pathLength="100">` + `stroke-dasharray="p 100-p"` + `dashoffset=25−cum`（12 点起顺时针）。
-- **硬约束**：纯 CSS `@keyframes`（无 JS/无外部引用/无外部字体）；`@media (prefers-reduced-motion:reduce){*{animation:none!important}}`；只用站点 :root 色板；`width="100%"` 不写死像素；原 PNG 保留不删（引用切 .svg）。
+- **硬约束**：纯 CSS `@keyframes`（无 JS/无外部引用/无外部字体）；`@media (prefers-reduced-motion:reduce){*{animation:none!important}}`；只用站点 :root 色板；**根元素必须显式数值 `width`/`height`（=viewBox 尺寸）**——`width="100%"` 在站点 `.lb-thumb{width:fit-content}` 包裹下无固有尺寸会塌缩成 0（图不显示，2026-10-26 实测）；显式像素 + 全局 `max-width:100%` 仍响应式；原 PNG 保留不删（引用切 .svg）。
 - **QA 双检查器**（`HK1V11/script/_chapter_viz/`）：`_svg_qa.py`（XML/无JS/无外联/reduced-motion/签名）+ `_svg_anim_qa.py`（**infinite 动画含 opacity 0→1 / scale 0→1 入场语义即打回**；逗号分隔多动画 shorthand 须分段解析——`infinite` 只属于它所在段）。
 - **上下文经济学**：数据图（条形/环形）手算几何易撑爆 subagent 上下文 → 让 subagent **写生成器脚本**（ast 取数+代码算几何+内置自检）再执行，实测可复跑（`gen_donut_svg.py`）。
 
