@@ -192,7 +192,7 @@ When the day's work involves complex debugging, cross-validation, evidence colle
 
 当任务涉及架构关系、数据流向、状态机跳转或调试链路时，使用 `fireworks-tech-graph` skill 生成 SVG+PNG 技术图表，插入日报提升可读性。
 
-> **动画版（2026-10-26）**：图若被判定适合动画（有清晰阅读顺序/高亮点的大图），按 `fireworks-tech-graph`「Animated SVG」条款额外产出动画 SVG（纯 CSS 无 script、零数据改动、终态=静态图）；日报站（GitHub Pages）`<img>` 直接引用即可播放，静态版保留为 fallback。
+> **动画版（2026-10-26）**：图若被判定适合动画（有清晰阅读顺序/高亮点的大图），按 `fireworks-tech-graph`「Animated SVG」条款额外产出动画 SVG（纯 CSS 无 script、零数据改动、终态=静态图、**必须含至少一个无限循环特效**——图常在页面下半部，一次性 reveal 等用户滚到时已结束）；日报站（GitHub Pages）`<img>` 直接引用即可播放，静态版保留为 fallback。
 
 ![图标题](https://ymzhuuuuufz0313l.github.io/daily-record/images/<project>/<diagram>.svg)
 
