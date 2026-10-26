@@ -134,6 +134,21 @@ plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':
 - PIL 表格图：fork 共享渲染函数仅换色板（墨头条+纸底+语义行底：焦点行 `#e8edfb` 淡蓝、次焦点 `#f7e8d4` 柔琥珀、关键列 `#065f70` 深绿加粗），**数据行逐行照抄禁改**，超采样 `S=4` 防缩放糊（字体=size×S，等效字号=字带px×显示宽/图宽）。
 - 暗色主题：纸底 PNG 加 surface 框线过渡（`.lb-thumb` 暗色 padding+border+圆角）。
 
+### 站点图表动画化（2026-10-26 定稿，观赏性加分项）
+
+把站点里"模型判定可动画"的图做成动画 SVG（hk1v11 站点 6 图实例：结构图/条形/环形/表格×3，`team-share-public/hk1v11-synthesis-postpt-practice/`）。
+
+- **选型（两步门控）**：① 用途=传达数据进报告 → 可重绘；工具输出快照截图（CSV 报表截屏等）→ **keep 原样，重绘=伪造截图**。② 有源（数据在生成脚本里）+ 离散结构（表/条/环/框图）→ 重绘；无源（波形/照片）→ keep。
+- **动画架构（用户口径 2026-10-26）**：
+  - **入场一次性、绝不循环**（forwards、总 ≤2.5s、元素默认态=最终完整态——`from` 态只在 keyframes 内生效）；
+  - **循环只给持续特效**：每图 3–6 个 infinite，周期 2.4/3.2/4/5.2/6/7s **互异+相位错开**（禁整图同步机械脉冲），温和（峰值 opacity≤0.5、内容元素位移≤2–4px、scale≤1.03；扫光带等纯装饰光效可长位移）；
+  - 特效优先服务可视化：数据流方向（行进虚线）、峰值/关键值（柔光脉冲）、对比对（扫光带限定 clip）、代际演进（时间轴进度带逐段填充）。
+- **长页面下方图问题（关键）**：入场动画在加载时播完、用户滚到时看不到 → site.js 加 **IntersectionObserver 滚动重播**：首屏外 `img[src$=".svg"]` 首进视口前 240px 时 `img.src = base + '?v=' + Date.now()`（query 强制 `<img>` 内 SVG 重渲染=重播）+ `loading="lazy"`；首屏内图不重播。
+- **数据纪律**：数值从源脚本 **ast 逐字转录**（禁手抄），生成后双向核对（单元格数/`<text>` 节点数/扇区数逐一相等，含 −/→/— 码位）；数据表图尾零要跟 PNG 显示一致（`fmt_num` 去尾零口径）。环形图免手算弧线：`<circle pathLength="100">` + `stroke-dasharray="p 100-p"` + `dashoffset=25−cum`（12 点起顺时针）。
+- **硬约束**：纯 CSS `@keyframes`（无 JS/无外部引用/无外部字体）；`@media (prefers-reduced-motion:reduce){*{animation:none!important}}`；只用站点 :root 色板；`width="100%"` 不写死像素；原 PNG 保留不删（引用切 .svg）。
+- **QA 双检查器**（`HK1V11/script/_chapter_viz/`）：`_svg_qa.py`（XML/无JS/无外联/reduced-motion/签名）+ `_svg_anim_qa.py`（**infinite 动画含 opacity 0→1 / scale 0→1 入场语义即打回**；逗号分隔多动画 shorthand 须分段解析——`infinite` 只属于它所在段）。
+- **上下文经济学**：数据图（条形/环形）手算几何易撑爆 subagent 上下文 → 让 subagent **写生成器脚本**（ast 取数+代码算几何+内置自检）再执行，实测可复跑（`gen_donut_svg.py`）。
+
 ### 卡片系统（组件类收敛，禁 inline 泛滥）
 
 - `chapter-card` 基类 + `.card-span`（通栏）/`.card-hero`（大数卡，`.title` 32px）/`.card-center`/`.card-mini`（`.title` 20px）；**非链接卡 `:not(a):hover` 不升起**（升起误导点击）。
@@ -150,4 +165,4 @@ plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':
 - ❌ 点击图片本体即关闭 lightbox（应为缩放平移，点空白才关）
 - ❌ 白底 matplotlib 图直接嵌暖纸站（视觉孤岛，必须换站色板）
 
-<!-- ymzhu 2026-10-21 13:42 -->
+<!-- ymzhu 2026-10-26 17:42 -->
