@@ -153,6 +153,13 @@ plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':
   - **Edge 无头截图**：`msedge --headless --disable-gpu --user-data-dir=<每跑一个新目录> --window-size=<W>,<H> --virtual-time-budget=8000 --screenshot=<png> <file:///…svg>`——**文件延迟落盘**（进程退出后 1–30s 才写出，必须轮询 `[ -f ]` 最多 ~40s 再判失败）；**一次工具调用只渲染一张**（连续批量易静默失败）；中文走系统字体正常（cairosvg 无 CJK 出豆腐块，只适合结构自检）。
   - **诊断签名**："直接 URL 能显示、页面里空白" = **`<img>` 上下文问题**（wrapper CSS/JS），先查 `.lb-thumb`/lightbox 包裹与 fit-content×百分比宽，**不要**疑文件本体、部署或缓存；硬刷新解决不了这种问题。
 - **聊天分享**：聊天附件预览**不支持 SVG**（只认位图）→ 图需要发聊天时，用上面的 Edge 渲染法出 PNG 快照（放站点 `png_preview/` 本地存档，不提交进站点仓库——站点继续用 SVG 动画版）。
+- **mermaid 流程图（内联 SVG，另一条动画化路径，2026-10-26 hk1v11 站点 ch05/06/09 实例）**：
+  - **先验证 fence 真的渲染了**：```mermaid 块若没引入 mermaid.min.js + 调 `run()`，页面显示的是**原始代码块**（hk1v11 站点 3 章此前就是这个状态）——"动画化"之前先确认图本体存在。
+  - **启用三件套**：页面引 mermaid.min.js（site.js 前）→ site.js 把 `pre code.language-mermaid` 换成 `pre.mermaid` 交 `mermaid.run({nodes})`（theme=default + themeVariables 站点色板）→ IntersectionObserver 加 `.play` + 内联样式启动动画（纯 class/inline，**无需重渲染**，与 `<img>` SVG 的 src 重播不同）。
+  - **动画配方**：节点阶梯淡入（opacity only，`g.node` 自带 transform 属性——**禁 transform 动画**，会被覆盖导致节点错位）+ 边线 dash-draw（可见边 = `path.flowchart-link`，marker 箭头在画线期间先现=标准效果）+ 节点接力柔光（infinite，8s 周期）。
+  - **多动画同属性冲突（实测坑）**：CSS 多动画作用于同一属性时**列表最后一个生效**——infinite 接力动画若带 fill-mode 或其 0% 关键帧含 opacity:1，会整体覆盖一次性淡入 → **接力动画不给 fill-mode + delay 设到入场播完之后**（如 2.8s），周期要容得下全部节点按序接力。
+  - **样式坑**：`.mermaid` 是 `<pre>`，会吃到站点暗色代码块样式 → 覆盖（transparent 底/无边框/去语言标签/去复制按钮）；themeVariables 在部分版本不吃 → 节点色用 CSS 直接覆盖 `g.node rect{fill/stroke}`；节点文本在 foreignObject 的 div 里（无 SVG `<text>`）。
+  - **无头验证**：Edge `--virtual-time-budget` **会推进 CSS 动画并在预算时刻截帧**——小预算（300ms）可截入场中途帧验证逐现；JS 流程卡点用"状态机测试页"（把每步结果写进页面 div，截图读）。
 
 ### 卡片系统（组件类收敛，禁 inline 泛滥）
 
@@ -170,4 +177,4 @@ plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':
 - ❌ 点击图片本体即关闭 lightbox（应为缩放平移，点空白才关）
 - ❌ 白底 matplotlib 图直接嵌暖纸站（视觉孤岛，必须换站色板）
 
-<!-- ymzhu 2026-10-26 18:20 -->
+<!-- ymzhu 2026-10-26 19:10 -->
