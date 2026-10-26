@@ -148,6 +148,11 @@ plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':
 - **硬约束**：纯 CSS `@keyframes`（无 JS/无外部引用/无外部字体）；`@media (prefers-reduced-motion:reduce){*{animation:none!important}}`；只用站点 :root 色板；**根元素必须显式数值 `width`/`height`（=viewBox 尺寸）**——`width="100%"` 在站点 `.lb-thumb{width:fit-content}` 包裹下无固有尺寸会塌缩成 0（图不显示，2026-10-26 实测）；显式像素 + 全局 `max-width:100%` 仍响应式；原 PNG 保留不删（引用切 .svg）。
 - **QA 双检查器**（`HK1V11/script/_chapter_viz/`）：`_svg_qa.py`（XML/无JS/无外联/reduced-motion/签名）+ `_svg_anim_qa.py`（**infinite 动画含 opacity 0→1 / scale 0→1 入场语义即打回**；逗号分隔多动画 shorthand 须分段解析——`infinite` 只属于它所在段）。
 - **上下文经济学**：数据图（条形/环形）手算几何易撑爆 subagent 上下文 → 让 subagent **写生成器脚本**（ast 取数+代码算几何+内置自检）再执行，实测可复跑（`gen_donut_svg.py`）。
+- **图面干净**：图内脚注**不与页面正文重复**——口径说明页面 blockquote 已有的，图里直接删（2026-10-26 功耗对比图删 4 行脚注 + 画布收紧 457→400）；图只放"看表时此刻需要"的信息。
+- **视觉验证（Windows 本机，subagent 沙箱跑不了时的正路）**：
+  - **Edge 无头截图**：`msedge --headless --disable-gpu --user-data-dir=<每跑一个新目录> --window-size=<W>,<H> --virtual-time-budget=8000 --screenshot=<png> <file:///…svg>`——**文件延迟落盘**（进程退出后 1–30s 才写出，必须轮询 `[ -f ]` 最多 ~40s 再判失败）；**一次工具调用只渲染一张**（连续批量易静默失败）；中文走系统字体正常（cairosvg 无 CJK 出豆腐块，只适合结构自检）。
+  - **诊断签名**："直接 URL 能显示、页面里空白" = **`<img>` 上下文问题**（wrapper CSS/JS），先查 `.lb-thumb`/lightbox 包裹与 fit-content×百分比宽，**不要**疑文件本体、部署或缓存；硬刷新解决不了这种问题。
+- **聊天分享**：聊天附件预览**不支持 SVG**（只认位图）→ 图需要发聊天时，用上面的 Edge 渲染法出 PNG 快照（放站点 `png_preview/` 本地存档，不提交进站点仓库——站点继续用 SVG 动画版）。
 
 ### 卡片系统（组件类收敛，禁 inline 泛滥）
 
@@ -165,4 +170,4 @@ plt.rcParams.update({'text.color':INK,'figure.facecolor':PAPER,'axes.facecolor':
 - ❌ 点击图片本体即关闭 lightbox（应为缩放平移，点空白才关）
 - ❌ 白底 matplotlib 图直接嵌暖纸站（视觉孤岛，必须换站色板）
 
-<!-- ymzhu 2026-10-26 17:42 -->
+<!-- ymzhu 2026-10-26 18:20 -->
