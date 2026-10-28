@@ -52,7 +52,7 @@ description: Xilinx(AMD) FPGA/MPSoC 全工具链参考——Vivado XDC 约束、
 ### 4.1 XDC delta 工作流
 1. 先读项目 `HK1V11_HDL_analysis_*.md`（顶层端口 / 时钟域 / CDC 异步对清单，§10 delta 核对项）。
 2. 对照七月基线 XDC 逐条核对：`create_clock`（含 `clk_lane` 这种**数据脚当时钟**——来自 `VU440_FPGA_RX_BUS_I[201]`）/ 输出时钟（`WCK_fpga`）/ `false_path` / `max_delay` / 新增删端口 / pin 分配 / ILA 探针。
-3. 三模型（GLM-5.3 / Qwen / Kimi K3）各自独立产出 → 交叉验证仲裁出最终版（模型路由见 `subagent-dispatch`；Qwen 256K 只给目标+文件路径让它自读）。
+3. 双模型（GLM-5.3 / Qwen）各自独立产出 → 交叉验证仲裁出最终版（模型路由见 `subagent-dispatch`；Qwen 256K 只给目标+文件路径让它自读）。
 
 ### 4.2 约束生效判定纪律（铁律，不看源码猜）
 判定"生效 / 冲突 / 丢失"只看落地证据链：
@@ -82,4 +82,4 @@ description: Xilinx(AMD) FPGA/MPSoC 全工具链参考——Vivado XDC 约束、
 5. **数据脚当时钟（clk_lane）漏 create_clock** → 该域无时钟、路径全 unconstrained。
 6. **新时钟没进 false_path / 异步豁免** → 跨域假违例。
 
-<!-- ymzhu 2026-10-16 15:34 -->
+<!-- ymzhu 2026-10-28 18:19 -->

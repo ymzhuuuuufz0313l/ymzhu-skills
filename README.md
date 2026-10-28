@@ -43,7 +43,7 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 | Skill | 做什么 |
 |---|---|
 | `agent-teams-router` | 判断任务是否适合启用 Agent Teams 多智能体模式，给激活方式与成本控制 |
-| `subagent-dispatch` | 派发 subagent 前的模型选择与确认协议（多模型分工：K3/QWEN/GLM 等） |
+| `subagent-dispatch` | 派发 subagent 前的模型选择与确认协议（多模型分工：QWEN/GLM 等） |
 
 ### 可视化 / UI
 
@@ -60,4 +60,4 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 | `office-com-reader` | 读取加密/受保护的 Office（xlsx/docx/pptx）与 PDF：原生 COM API + pypdf + Acrobat COM 兜底，兼容企业 DLP 透明加密 |
 | `colleague-skill`（distilly） | 把同事/关系/名人素材蒸馏成可复用的 Person Profile |
 
-<!-- ymzhu 2026-10-19 16:48 -->
+<!-- ymzhu 2026-10-28 18:19 -->
