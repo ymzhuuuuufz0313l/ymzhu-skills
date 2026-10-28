@@ -18,6 +18,8 @@ disable-model-invocation: false
 
 **实测事实（2026-09-29/30）**：`subagent` 支持 `provider`/`model` 跨模型覆盖（Qwen / GLM-5.3 均实测通过）。同模型同任务对比：subagent 与 agent-teams 成员产出质量相当，subagent 更快、机制更轻。**默认用 subagent，不建 agent-teams 队**（除非用户明确要求团队模式）。agent-teams 插件自桌面 0.2.0-rc.2 起全功能正常（2026-10-04 实测：建队/调度/任务板/成员执行/完成报告全链路通过），用户点名团队模式时直接用。
 
+**Qwen 接入坑（2026-10-28 实测排障）**：ZCode 对所有 anthropic-messages 格式的自定义供应商，内置推理映射是 GLM 专有格式——`thinking: {"type":"adaptive"}` + `output_config: {"effort":...}`。**Qwen 走 new-api 网关时这两个字段各答自触发 400 invalid_request**，症状是子代理请求被随机拒（N 路并发挂 1~2 路、换子代理也复发、重试无效）。修复：在 provider_config.json 的 Qwen 模型条目 optionSpecs 里写入兼容映射（已固化）：`reasoningLevel == "disabled" ? {"thinking":{"type":"disabled"}} : {"thinking":{"type":"enabled","budget_tokens":8192}}`。⚠️ 若在 UI 里重开「智能配置」或重存模型配置，此覆盖会被内置映射覆盖回去，需重写。排障方法：ZCode 配置热重载（改 provider_config.json 立即生效），可指向本地日志代理抓真实请求字节，再用原始字节重放 + 逐字段二分定位。
+
 ## 派发协议
 
 1. **选模型**：默认 GLM 系（高强度任务 GLM-5.3；快/大规模 GLM-5.3-flash；不确定就直派继承当前路由）。
@@ -43,4 +45,4 @@ disable-model-invocation: false
 4. **单个简单子代理**：按档直派，不逐次打断。
 5. **收尾**：一次性子代理拿回结果即弃；要留给其他会话 / agent 的结论，**显式存进 dsh-mnemon**（Document / 记忆），别指望子代理记得。
 
-<!-- ymzhu 2026-10-28 18:19 -->
+<!-- ymzhu 2026-10-28 18:59 -->
