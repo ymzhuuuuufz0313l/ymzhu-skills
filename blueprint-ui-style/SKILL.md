@@ -184,7 +184,7 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 1. **布局锁定**：每张 SVG img 首次加载完成后，立即将 `naturalWidth/naturalHeight` 写入 `style.aspect-ratio` 并补 `width:100%; height:auto`。此后无论 src 如何变化，盒子尺寸恒定 → 切换零位移。
 2. **预载后交换**：切模式时先 `new Image()` 预载目标版本，`onload` 后才改 `img.src`（缓存命中时即时）→ 无空白窗口。
 3. **废除 `?v=Date.now()` 强刷**（v3 及之前"滚动重播"的做法）：强制重载必闪跳，一律禁止。
-4. **重播用 clone**：需重播入场动画时 `img.replaceWith(img.cloneNode())`——克隆节点重启 CSS 动画且零网络请求（首次加载需已在缓存；file:// 同样有效）。
+4. **重播用同 src 重赋值**：需重播入场动画时 `img.src = img.src`——同值赋值触发 load 管线重启 SVG 内 CSS 动画（Chromium 实测有效）、零网络、**节点不变**。**禁止 `cloneNode()+replaceWith` 重播**（2026-10-28 事故：替换节点会丢失 lightbox 等外部 addEventListener 监听 → 全站图片点不开大图）。
 5. 模式优先级链：URL `?motion=static|anim` > sessionStorage(`motion-mode`) > `prefers-reduced-motion` > **anim（默认一律动画，2026-10-28 用户定稿）**。选择只在会话内记忆（关浏览器重置为动画）；localStorage 持久记忆已弃用（曾致用户点过一次静态后全站永久静态）；`html.page-static` kill 块保留。
 6. fx.js 是全仓库单一事实源：**9 处副本**（8 站点目录 + `site-template/`）必须字节一致；任何改动后全站 84 处引用统一 bump `?v=N+1`。
 7. **切换按钮 = 全仓库统一浮动小组件（2026-10-28 定稿）**：一律由 fx.js 注入 `#motionToggle.float-motion`——`position:fixed` 右下角，与 `#fx-top` 返回顶部成组（fx-top `right:24px; bottom:28px`，motionToggle `right:24px; bottom:100px`；≤640px 时 right:12px / bottom:92px）。**禁止注入 `.navbar-links`**（各站 navbar-links 布局不一，practice 站为 `flex-direction:column` 纵向菜单，注入后按钮独占一行——ch16 实测）；**页面不得硬编码 motionToggle**，统一由引擎注入，保证 84 页外观一致。
@@ -195,13 +195,13 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 
 **三幕叙事**：入场（一次性，总长 ≤2.5s，讲故事）→ 稳态（持续层，必须"肉眼可辨"）。
 
-**稳态禁用纯低幅 opacity 呼吸充当主要动效**（0.45–0.68 幅度已被用户判定"看不出动画"）。稳态至少含下述 2 类：
+**稳态禁用纯低幅 opacity 呼吸充当主要动效**（0.45–0.68 幅度已被用户判定"看不出动画"）。稳态至少含下述 2 类。**v4.1 口径（2026-10-28 用户验收）**：①**一切缩放类动画（transform:scale）禁止**——用户定性"抖动效果不喜欢，远不如呼吸"，pulse/wave/step 只用 opacity + drop-shadow 辉光呼吸；②**列车降速**：flowdot/flowtail 默认 2.6s/程（原 1.5s），速度过快会"眼花缭乱"；③**亮白拖尾/亮带慎用**：白色高亮扫过（白色 flowtail、大幅扫光带）判定刺眼——拖尾颜色必须同链光点色，扫光只限语义区且不遮数据；④数据图表（环形/柱状对比）**默认不加行进**，用户点名才加。
 
 | 类 | 效果 | 关键实现 |
 |---|---|---|
-| `.flowdot` 数据列车 | 主链路光点流：stroke-width 3–4 + 双层 dash 拖尾，速度分层（主干快/支路慢），同链错相位成"列车" | `pathLength="100"` |
-| `.pulse` 节点脉冲 | 英雄节点 scale 1↔1.025 + 12px 辉光 | **必须 `transform-box:fill-box; transform-origin:center`**，否则缩放围绕画布原点漂移 |
-| `.sweep` 语义扫光 | 渐变光带横扫"对比列/新增标注"（禁整表扫） | 需在 defs 加渐变；8s 周期 |
+| `.flowdot` 数据列车 | 主链路光点流：stroke-width 3–4 + 拖尾（拖尾同色，禁白色），速度分层（主干快/支路慢，默认 2.6s） | `pathLength="100"` |
+| `.pulse` 节点脉冲 | 英雄节点**辉光呼吸**（opacity 0.8 + 10px 辉光，无缩放） | 类保留 `transform-box:fill-box`（校验签名）；keyframes 无 transform |
+| `.sweep` 语义扫光 | 渐变光带横扫"对比列/新增标注"（禁整表扫、禁亮白） | 需在 defs 加渐变；8s 周期 |
 | `.dashgrow` 链路生长 | 关键路径虚线持续生长回卷，暗示链路活性 | dashoffset 循环 |
 
 入场编排铁律：**先容器 → 再内容 → 最后箭头**；箭头 delay ≥ 两端面板入场完成时刻（v2 实测 0.8s 帧有"箭头悬浮在空白面板上"的缺陷，禁止再现）。
@@ -281,7 +281,8 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 - ❌ 点击图片本体即关闭 lightbox（应为缩放平移，点空白才关）
 - ❌ 白底 matplotlib 图直接嵌暖纸站（视觉孤岛，必须换站色板）
 - ❌ img 直接换 src 不锁 `aspect-ratio`（重载窗口图片塌陷 → 页面错位，v4 契约 §2）
-- ❌ 用 `?v=Date.now()` 强制重载做"重播"（闪烁跳动；重播一律 cloneNode，v4 契约 §2.4）
+- ❌ 用 `?v=Date.now()` 强制重载或 `cloneNode()+replaceWith` 做"重播"（前者闪跳；后者丢外部监听致 lightbox 失效——重播一律同 src 重赋值，v4.1 契约 §2.4）
+- ❌ SVG 内 scale 缩放类"抖动"动画（用户明确不喜欢；一律 opacity+辉光呼吸）
 - ❌ 稳态动效只有 0.45–0.68 幅度 opacity 呼吸（用户判定"看不出动画"；稳态 ≥2 类可见动效，v4 契约 §3）
 
 <!-- ymzhu 2026-10-26 19:10 -->
