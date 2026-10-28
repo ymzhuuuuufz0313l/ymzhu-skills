@@ -187,7 +187,7 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 4. **重播用同 src 重赋值**：需重播入场动画时 `img.src = img.src`——同值赋值触发 load 管线重启 SVG 内 CSS 动画（Chromium 实测有效）、零网络、**节点不变**。**禁止 `cloneNode()+replaceWith` 重播**（2026-10-28 事故：替换节点会丢失 lightbox 等外部 addEventListener 监听 → 全站图片点不开大图）。
 5. 模式优先级链：URL `?motion=static|anim` > sessionStorage(`motion-mode`) > `prefers-reduced-motion` > **anim（默认一律动画，2026-10-28 用户定稿）**。选择只在会话内记忆（关浏览器重置为动画）；localStorage 持久记忆已弃用（曾致用户点过一次静态后全站永久静态）；`html.page-static` kill 块保留。
 6. fx.js 是全仓库单一事实源：**9 处副本**（8 站点目录 + `site-template/`）必须字节一致；任何改动后全站 84 处引用统一 bump `?v=N+1`。
-7. **切换按钮 = 全仓库统一浮动小组件（2026-10-28 定稿）**：一律由 fx.js 注入 `#motionToggle.float-motion`——`position:fixed` 右下角，与 `#fx-top` 返回顶部成组（fx-top `right:24px; bottom:28px`，motionToggle `right:24px; bottom:100px`；≤640px 时 right:12px / bottom:92px）。**禁止注入 `.navbar-links`**（各站 navbar-links 布局不一，practice 站为 `flex-direction:column` 纵向菜单，注入后按钮独占一行——ch16 实测）；**页面不得硬编码 motionToggle**，统一由引擎注入，保证 84 页外观一致。
+7. **切换按钮 = 放在顶部导航（2026-10-28 晚定稿，取代早先右下角方案）**：由 fx.js 注入 `#motionToggle`，挂载规则自动适配：横向 `.navbar-links` → **内联小胶囊**（链接流末尾）；纵向/下拉式 links（practice 站）→ `navbar-abs` **绝对定位于 .navbar 右缘垂直居中**（不参与 links 布局，绝不独占一行；static navbar 自动补 relative）；无 .navbar → `float-motion` 右上角固定兜底。**页面不得硬编码 motionToggle**；按钮不注入右下角。
 
 > 为何不内联 `<svg>`：内联可让页面 CSS 直接控制动画（理论最优），但 Chromium 拦截 `file://` 下的 fetch，而本地 file:// 截图验收是本 skill 标准流程；v4 预载交换在 file:// 与 https 行为一致。
 
