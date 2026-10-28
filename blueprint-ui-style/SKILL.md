@@ -187,6 +187,7 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 4. **重播用 clone**：需重播入场动画时 `img.replaceWith(img.cloneNode())`——克隆节点重启 CSS 动画且零网络请求（首次加载需已在缓存；file:// 同样有效）。
 5. 模式优先级链保留：URL `?motion=static|anim` > localStorage(`motion-mode`) > `prefers-reduced-motion` > anim；`html.page-static` kill 块保留（页面级特效仍由类控制）。
 6. fx.js 是全仓库单一事实源：8 份副本必须字节一致；任何改动后全站 84 处引用统一 bump `?v=N+1`。
+7. **切换按钮 = 全仓库统一浮动小组件（2026-10-28 定稿）**：一律由 fx.js 注入 `#motionToggle.float-motion`——`position:fixed` 右下角，与 `#fx-top` 返回顶部成组（fx-top `right:24px; bottom:28px`，motionToggle `right:24px; bottom:100px`；≤640px 时 right:12px / bottom:92px）。**禁止注入 `.navbar-links`**（各站 navbar-links 布局不一，practice 站为 `flex-direction:column` 纵向菜单，注入后按钮独占一行——ch16 实测）；**页面不得硬编码 motionToggle**，统一由引擎注入，保证 84 页外观一致。
 
 > 为何不内联 `<svg>`：内联可让页面 CSS 直接控制动画（理论最优），但 Chromium 拦截 `file://` 下的 fetch，而本地 file:// 截图验收是本 skill 标准流程；v4 预载交换在 file:// 与 https 行为一致。
 
