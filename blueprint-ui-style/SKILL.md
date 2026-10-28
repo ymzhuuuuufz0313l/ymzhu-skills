@@ -185,8 +185,8 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 2. **预载后交换**：切模式时先 `new Image()` 预载目标版本，`onload` 后才改 `img.src`（缓存命中时即时）→ 无空白窗口。
 3. **废除 `?v=Date.now()` 强刷**（v3 及之前"滚动重播"的做法）：强制重载必闪跳，一律禁止。
 4. **重播用 clone**：需重播入场动画时 `img.replaceWith(img.cloneNode())`——克隆节点重启 CSS 动画且零网络请求（首次加载需已在缓存；file:// 同样有效）。
-5. 模式优先级链保留：URL `?motion=static|anim` > localStorage(`motion-mode`) > `prefers-reduced-motion` > anim；`html.page-static` kill 块保留（页面级特效仍由类控制）。
-6. fx.js 是全仓库单一事实源：8 份副本必须字节一致；任何改动后全站 84 处引用统一 bump `?v=N+1`。
+5. 模式优先级链：URL `?motion=static|anim` > sessionStorage(`motion-mode`) > `prefers-reduced-motion` > **anim（默认一律动画，2026-10-28 用户定稿）**。选择只在会话内记忆（关浏览器重置为动画）；localStorage 持久记忆已弃用（曾致用户点过一次静态后全站永久静态）；`html.page-static` kill 块保留。
+6. fx.js 是全仓库单一事实源：**9 处副本**（8 站点目录 + `site-template/`）必须字节一致；任何改动后全站 84 处引用统一 bump `?v=N+1`。
 7. **切换按钮 = 全仓库统一浮动小组件（2026-10-28 定稿）**：一律由 fx.js 注入 `#motionToggle.float-motion`——`position:fixed` 右下角，与 `#fx-top` 返回顶部成组（fx-top `right:24px; bottom:28px`，motionToggle `right:24px; bottom:100px`；≤640px 时 right:12px / bottom:92px）。**禁止注入 `.navbar-links`**（各站 navbar-links 布局不一，practice 站为 `flex-direction:column` 纵向菜单，注入后按钮独占一行——ch16 实测）；**页面不得硬编码 motionToggle**，统一由引擎注入，保证 84 页外观一致。
 
 > 为何不内联 `<svg>`：内联可让页面 CSS 直接控制动画（理论最优），但 Chromium 拦截 `file://` 下的 fetch，而本地 file:// 截图验收是本 skill 标准流程；v4 预载交换在 file:// 与 https 行为一致。
@@ -232,17 +232,22 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 用户要求"做新网站 / 新站点 / 加一个站"（team-share-public 内或独立蓝图风站点）时，动手前**依次读完**：
 
 1. **本 skill 全文**（视觉 tokens、组件模板、动画实战章、v4 架构章、本章）；
-2. **组件模板源码（活模板）**：`E:\project\team-share-public\hk1v11-synthesis-postpt-practice\` 的 `css/style.css`（组件唯一事实源）、`js/site.js`、`js/lightbox.js`、`fx.css`、`fx.js`（v4 引擎）；
-3. **参考站的动效事实源**：`hk1v11-longcode-420b-verification/anim/MOTION_KIT.md`（v4 kit）。
+2. **站点骨架模板**：`E:\project\team-share-public\site-template\`（README + index.html/page.html 骨架 + 引擎/组件逐字副本）——**建新站的第一动作就是复制这个目录**；
+3. **组件模板源码（活模板）**：`E:\project\team-share-public\hk1v11-synthesis-postpt-practice\` 的 `css/style.css`（组件唯一事实源）、`js/site.js`、`js/lightbox.js`、`fx.css`、`fx.js`（v4 引擎）；
+4. **参考站的动效事实源**：`hk1v11-longcode-420b-verification/anim/MOTION_KIT.md`（v4 kit）。
+
+### 0.5 核心框架定死（2026-10-28 用户定调："不然模型会放飞自我"）
+
+**骨架、目录、文件集、技术栈、引用顺序全部定死，模型只填内容槽，不写结构。** 唯一骨架来源 = `site-template/`（禁止从零手写页面骨架）；固定文件（css/style.css、js/site.js 除 NAV 数组、js/lightbox.js、js/marked.min.js、fx.js、fx.css、页面骨架的 head/导航/容器/脚本顺序）逐字使用禁改；内容槽清单与禁止清单见 `site-template/README.md`（新框架/新依赖/新组件/新目录层级/第二套按钮/绕过双版管线，一律 ❌）。
 
 ### 1. 站点模块清单（目录契约，新站只允许由这些模块组成）
 
 | 模块 | 来源 | 规则 |
 |---|---|---|
-| `index.html` + 子页面 | 复制 practice 站页面为骨架 | 只改内容（标题/章节/数据/链接）；导航结构、head 引用、组件类名不动 |
-| `css/style.css` | 逐字复制 practice 站 | **token 与组件禁改**；只允许追加站点专属内容类（须最小化） |
-| `js/site.js` · `js/lightbox.js` | 逐字复制 practice 站 | 禁改 |
-| `fx.css` · `fx.js` | 逐字复制仓库当前版（8 副本字节一致） | **禁改**；引用统一带 `?v=N`，引擎升级由全仓库统一 bump |
+| `index.html` + 子页面 | 复制 `site-template/index.html` + `page.html` 骨架 | 只改内容（标题/章节/数据/链接）；导航结构、head 引用、组件类名不动 |
+| `css/style.css` | `site-template/` 逐字副本（源于 practice 站） | **token 与组件禁改**；只允许追加站点专属内容类（须最小化） |
+| `js/site.js` · `js/lightbox.js` | `site-template/` 逐字副本（源于 practice 站） | site.js 唯一内容槽 = 顶部 NAV 数组，其余禁改 |
+| `fx.css` · `fx.js` | `site-template/` 逐字副本（= 全仓库引擎，9 处一致） | **禁改**；引用统一带 `?v=N`，引擎升级由全仓库统一 bump |
 | `<name>.svg`（静态）+ `anim/<name>.svg` + `anim/make_anim_<name>.py` | v4 双版管线 | 按 v4 架构章 + MOTION_KIT v4；HTML 只引用动画版 |
 | `anim/MOTION_KIT.md` | 从 longcode 站复制 | 改"路径"与"分图规格"两节为本站实际；kit CSS 与铁律禁改 |
 | 根导航登记 | team-share-public 根 `index.html` | 新站入口登记进站点列表 |
