@@ -114,6 +114,12 @@ Use this order when instructions disagree:
 
 Geometry and validation gates always remain active: style guidance cannot justify unreadable text, missing marker definitions, or arrows crossing component interiors. Tables in this file define semantic defaults; a selected style may override their colors and stroke treatment while preserving the meaning and direction of each flow.
 
+**Dual-version animated figures for user's sites (2026-10-28)**: when a figure is embedded in a
+blueprint-style site and needs an animated + static pair, follow the "动画/静态双版 SVG 站点架构
+(v4)" chapter in the `blueprint-ui-style` skill — static SVG is the source of truth, the animated
+variant is generated into the site's `anim/` directory with pure in-SVG CSS (no scripts), and
+in-site figures must use the site paper palette, never this skill's default dark-blue style.
+
 ## Diagram Types & Layout Rules
 
 ### Architecture Diagram
