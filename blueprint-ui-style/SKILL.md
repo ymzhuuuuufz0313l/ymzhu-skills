@@ -123,6 +123,7 @@ th { border-top: none; border-bottom: 2px solid var(--line); }
 ### 图片（lightbox 查看器 + 纸色图表，双加分项）
 
 - **lightbox v2**：点击全屏 → **滚轮以光标为锚缩放**（0.5–12×，`offsetLeft/Top` 是布局值不受 transform 影响）+ **拖动平移** + **双指捏合**（增量中点锚定，复用同一 `zoomAt(cx,cy,f)`）+ 双击/`0` 复位 + ←/→ 换图 + ESC/×/点空白关（**点图片本体不关**——点击即关是反模式）。`show()/hide()` 必须清指针状态（防幽灵捏合）。正文图 hover 显示 **🔍 角标**（JS 包 `.lb-thumb` span，img 是 replaced element 不能挂伪元素）。
+- **v4.3 清晰缩放（铁律，2026-10-29）**：lightbox 放大 SVG **禁止 `transform: scale()`**，必须改真实布局尺寸——`width/height = 基准×s`（缩放期间解除 `max-width/height` 钳制，`s===1` 时清空），transform 只写 `translate`。依据：Chromium 按「布局尺寸×DPR」重栅格化 `<img>` 里的 SVG，布局尺寸放大在高 DPR 屏（Windows 125%/150%）必走矢量重栅格；transform 缩放在高 DPR 有"先按布局尺寸光栅化再拉伸位图纹理"路径 → 发糊（DPR=1 实测两法逐像素等价，均为矢量级清晰；但用户屏普遍 DPR>1）。实现模板（三处硬性细节）：① 基准尺寸懒捕获 `baseW = clientWidth || naturalWidth`；② **baseW 为 0（图未加载完）不得设 width/height**（否则 0px 图片消失）；③ `reset()/换图` 必须清零 `baseW/baseH`（否则沿用上一张图的基准）。活模板：practice 站 `js/lightbox.js` 与 52 个内联页（`updateTransform` 形态），参考实现 `hk1v11-longcode-420b-verification/index.html`。
 - **动画 SVG（双版架构）**：站点配图一律走「动画/静态双版 SVG 站点架构（v4）」章——静态版为事实源，`<img>` 指向 `anim/` 动画版，切换零重载（2026-10-28 定稿）。
 - **图表配色 = 站点色板**（消灭白底 matplotlib 孤岛）：
 ```python
@@ -279,6 +280,7 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 - ❌ teal/slate 旧配色（本站 2026-09-07 前的样子）
 - ❌ 列表型卡片墙（镜像 TOC 无增量信息，用户否决过 ch10 21 则卡墙）
 - ❌ 点击图片本体即关闭 lightbox（应为缩放平移，点空白才关）
+- ❌ lightbox 用 `transform: scale()` 放大 SVG（高 DPR 屏位图拉伸发糊；一律布局尺寸放大 + transform 只平移，v4.3 契约）
 - ❌ 白底 matplotlib 图直接嵌暖纸站（视觉孤岛，必须换站色板）
 - ❌ img 直接换 src 不锁 `aspect-ratio`（重载窗口图片塌陷 → 页面错位，v4 契约 §2）
 - ❌ 用 `?v=Date.now()` 强制重载或 `cloneNode()+replaceWith` 做"重播"（前者闪跳；后者丢外部监听致 lightbox 失效——重播一律同 src 重赋值，v4.1 契约 §2.4）
@@ -287,4 +289,5 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 
 <!-- ymzhu 2026-10-26 19:10 -->
 <!-- v4 动画架构章新增于 2026-10-28 -->
+<!-- v4.3 清晰缩放章新增于 2026-10-29 -->
 <!-- ymzhu 2026-10-21 13:42 -->
