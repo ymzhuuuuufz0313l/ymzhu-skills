@@ -7,6 +7,7 @@ description: >-
   when the user asks to draw or visualize a system, workflow, protocol, model,
   or engineering concept. Do not use for photos, raster illustrations, image
   editing, decorative artwork, or quantitative data charts.
+  中文触发词：架构图、流程图、数据流图、时序图、UML、状态机图、ER 图、网络拓扑、技术示意图、动画 SVG、动画图、寄存器图、地址映射图。
 ---
 
 # Fireworks Tech Graph
@@ -15,7 +16,7 @@ Generate production-quality SVG technical diagrams exported as PNG via `cairosvg
 
 ## Runtime Compatibility
 
-Use this repository unchanged in both Codex and Claude Code. It follows the Agent Skills layout: `SKILL.md` is the shared entry point, bundled resources use relative paths, and `agents/openai.yaml` adds optional Codex UI metadata without affecting Claude Code.
+Use this repository unchanged in both Codex and Claude Code. It follows the Agent Skills layout: `SKILL.md` is the shared entry point and bundled resources use relative paths.
 
 Before reading a reference or running a script, resolve the directory containing this `SKILL.md` as `SKILL_ROOT`. Do not assume the current working directory is the skill directory, and do not assume a variable set in one shell call persists into the next.
 
@@ -23,59 +24,6 @@ Before reading a reference or running a script, resolve the directory containing
 - In Codex, use the absolute skill directory shown in the loaded skill metadata.
 
 Every command block below sets `SKILL_ROOT` itself. In Codex, replace `/absolute/path/from-codex-skill-metadata` with the absolute skill directory before running the command.
-
-## Helper Scripts (Recommended)
-
-Four helper scripts in `scripts/` directory provide stable SVG generation and validation:
-
-### 1. `generate-diagram.sh` - Validate SVG + export PNG
-```bash
-SKILL_ROOT="${CLAUDE_SKILL_DIR:-/absolute/path/from-codex-skill-metadata}"
-"$SKILL_ROOT/scripts/generate-diagram.sh" -t architecture -s 1 -o ./output/arch.svg
-```
-- Validates an existing SVG file
-- Exports PNG after validation
-- Example: `"$SKILL_ROOT/scripts/generate-diagram.sh" -t architecture -s 1 -o ./output/arch.svg`
-
-### 2. `generate-from-template.py` - Create starter SVG from template
-```bash
-SKILL_ROOT="${CLAUDE_SKILL_DIR:-/absolute/path/from-codex-skill-metadata}"
-mkdir -p ./output
-python3 "$SKILL_ROOT/scripts/generate-from-template.py" architecture ./output/arch.svg '{"title":"My Diagram","nodes":[],"arrows":[]}'
-```
-- Loads a built-in SVG template
-- Renders nodes, arrows, and legend entries from JSON input
-- Escapes text content to keep output XML-valid
-
-### 3. `validate-svg.sh` - Validate SVG syntax
-```bash
-SKILL_ROOT="${CLAUDE_SKILL_DIR:-/absolute/path/from-codex-skill-metadata}"
-"$SKILL_ROOT/scripts/validate-svg.sh" <svg-file>
-```
-- Checks XML syntax
-- Verifies tag balance
-- Validates marker references
-- Checks attribute completeness
-- Validates path data
-
-### 4. `test-all-styles.sh` - Batch test all styles
-```bash
-SKILL_ROOT="${CLAUDE_SKILL_DIR:-/absolute/path/from-codex-skill-metadata}"
-"$SKILL_ROOT/scripts/test-all-styles.sh"
-```
-- Tests multiple diagram sizes
-- Validates all generated SVGs
-- Generates test report
-
-**When to use scripts:**
-- Use scripts when generating complex SVGs to avoid syntax errors
-- Scripts provide automatic validation and error reporting
-- Recommended for production diagrams
-
-**When to generate SVG directly:**
-- Simple diagrams with few elements
-- Quick prototypes
-- When you need full control over SVG structure
 
 ## Workflow (Always Follow This Order)
 
@@ -90,7 +38,7 @@ SKILL_ROOT="${CLAUDE_SKILL_DIR:-/absolute/path/from-codex-skill-metadata}"
 5. **Map nodes to shapes** — use Shape Vocabulary below
 6. **Check icon needs** — load `$SKILL_ROOT/references/icons.md` for known products
 7. **Write SVG** with adaptive strategy (see SVG Generation Strategy below)
-8. **Validate**: Run `"$SKILL_ROOT/scripts/validate-svg.sh" file.svg` to check XML, marker references, arrow-component collisions, and renderability
+8. **Validate**: Run `python3 -c "import xml.etree.ElementTree as ET; ET.parse('file.svg')"` to check XML well-formedness, and a cairosvg render check for renderability (both snippets are under SVG Generation & Error Prevention → Validation); then walk the Validation Checklist under Layout Rules & Validation for marker references and arrow-component collisions
 9. **Export PNG**: Use `cairosvg` (recommended). Load `$SKILL_ROOT/references/png-export.md` when choosing another renderer
 10. **Report** the generated file paths
 11. **Visual review gate** — if your runtime can read images, load the exported PNG back and inspect it. Syntactic validity does not guarantee visual correctness: arrows may cross through component interiors, labels may collide with lifelines or other labels, boxes may overlap, alt-frame text may sit on top of a message, or a legend may cover content. If you see any of these, revise the SVG and re-export, with at most two focused correction passes. Common fixes:
@@ -354,7 +302,7 @@ Always include a **legend** when 2+ arrow types are used.
 
 **Post-Generation Arrow Optimization**:
 
-When a user asks to "优化箭头" / "fix arrow routing" / "optimize the diagram" on an already-generated diagram, preserve all nodes, containers, styles, and layout — only modify the `arrows` entries in the JSON data, then re-render with `generate-from-template.py`.
+When a user asks to "优化箭头" / "fix arrow routing" / "optimize the diagram" on an already-generated diagram, preserve all nodes, containers, styles, and layout — only modify the `arrows` entries in the JSON data, then regenerate the affected arrow paths in the SVG with the Python list method (see SVG Generation & Error Prevention).
 
 Available arrow override fields (in recommended order of use):
 
@@ -374,7 +322,7 @@ Optimization steps:
 1. Read the existing SVG — identify which arrows overlap, cross nodes, or look misaligned
 2. Find those arrows in the JSON data by `source` / `target` pair
 3. Add `source_port` / `target_port` if the exit/entry direction is wrong; add `corridor_x` / `corridor_y` to space parallel arrows apart; use `route_points` only when hints alone cannot resolve the path
-4. Re-run `generate-from-template.py` with the updated JSON and validate with `validate-svg.sh`
+4. Regenerate the SVG from the updated JSON with the Python list method, then validate: XML via `python3 -c "import xml.etree.ElementTree as ET; ET.parse('file.svg')"`, renderability via a cairosvg render check
 
 Example — spacing two overlapping arrows into separate corridors:
 ```json
@@ -395,7 +343,7 @@ When two arrows must cross each other, ALWAYS use jump-over arcs to prevent visu
 3. **Arrow-Text Alignment**: Arrow endpoints MUST connect to shape edges (not floating); arrow labels should not overlap arrow lines (use offset positioning or background rects)
 4. **Container Discipline**: Prefer arrows entering and leaving section containers through open gaps between components, not through inner component bodies
 5. **Filter Boundary Safety**: For every element with `filter="url(...)"`, verify `(element_x + element_width + filter_extension) ≤ viewBox_width` AND `element_x ≥ filter_extension`. The default filter region extends 10-20% beyond bbox; staying near viewBox edges causes Chrome/cairosvg to clip the element's edge-side stroke (one side of the border vanishes while other sides render correctly)
-6. **Arrow-Title Collision**: Arrows MUST NOT cross through section/container title text or region labels (font-size ≥ 13px). For smaller annotations (< 13px), prefer routing around but tolerate if layout constraints require it. *(Visual self-review check — not covered by `validate-svg.sh` automated checks)*
+6. **Arrow-Title Collision**: Arrows MUST NOT cross through section/container title text or region labels (font-size ≥ 13px). For smaller annotations (< 13px), prefer routing around but tolerate if layout constraints require it. *(Visual self-review check — not covered by the automated XML / render checks)*
 7. **Frame Label–Arrow Alignment** (sequence diagrams): Section/frame label badges MUST be vertically centered with their first message arrow. Compute `badge_y = first_arrow_y - (badge_height / 2)`. When appending new sections to an existing diagram, verify alignment matches the existing sections — this is the most common regression when adding content incrementally. Use variables in Python list generation to enforce the constraint: `sec_y = 840; badge_y = sec_y - 9  # for height=18 badge`
 8. **Marker Integrity**: Every `marker-start`, `marker-mid`, and `marker-end` URL MUST resolve to a `<marker id="...">` definition
 9. **Visual Review Status**: Report whether the exported PNG was visually inspected; automated validation does not cover every text, legend, or arrow-arrow collision
@@ -451,7 +399,7 @@ python3 -c "import xml.etree.ElementTree as ET; ET.parse('file.svg')" && echo "�
 python3 -c "import cairosvg; cairosvg.svg2png(url='file.svg', write_to='/tmp/test.png')" && echo "✓ Renders" && rm /tmp/test.png
 ```
 
-**If using `generate-from-template.py`**:
+**When generating arrows from JSON data**:
 - Prefer `source` / `target` node ids in arrow JSON so the generator can snap to node edges
 - Keep `x1,y1,x2,y2` as hints or fallback coordinates, not the main routing primitive
 - Let the generator choose orthogonal routes; avoid hardcoding center-to-center straight lines unless the path is guaranteed clear
@@ -469,6 +417,8 @@ python3 -c "import cairosvg; cairosvg.svg2png(url='file.svg', write_to='/tmp/tes
 
 **Requirement (2026-10-26, ymzhu)**: when the model judges a diagram to be suitable for animation — and the user asks for it, or the diagram is destined for a website — also produce an animated SVG to increase its 观赏性/可视化 (visual appeal). Typical candidates: large register maps / address tables / beat-regroup grids with a natural top→bottom reading order and clear highlight points (new/changed fields, summary boxes).
 
+**Site-embedded precedence (2026-11-02, single source of truth)**: 图要嵌入 team-share / blueprint 站点时，**效果种类、周期、速度、颜色、目录结构一律以 `blueprint-ui-style`「动画/静态双版 SVG 站点架构」章为准**（唯一数值来源），本章只给通用技法与不变量。本章下文出现的具体数值（周期、速度、色值）仅适用于**非站点**的独立图。站点图三条硬约束速记（细则在 blueprint）：①**禁 transform:scale 缩放类动画**；②**扫光一律用文字光带**（白色亮峰只在文字字形内滑过，禁整块色带、禁红棕/琥珀亮带）；③**可见长度 < 80px 的短箭头不挂流光点/行进/生长**，改方框接力点亮。
+
 ### Rules
 
 1. **Pure CSS only**: all animation via an in-SVG `<style>` block (`@keyframes` + `animation`). No `<script>`, no external resources. Must play when embedded via `<img>` (browser CSS-in-SVG; SMIL not required).
@@ -477,25 +427,25 @@ python3 -c "import cairosvg; cairosvg.svg2png(url='file.svg', write_to='/tmp/tes
 4. **Effects — model decides (2026-10-26: 特效不限于呼吸，按图的内容自选，目的是提高可视化程度)**. 分三档（2026-10-26 用户定稿：入场动画一次性、不循环；常驻强调必选一个 infinite；扫描/缩放/填充是点缀）:
    - **入场（一次性，`forwards`，不循环）**：
      - *Row reveal*: wrap each structural unit (row / beat / band) in `<g class="row" style="animation-delay: N×0.03s">`. CSS: `.row { opacity:0; animation: rowIn 0.4s ease forwards; }` / `@keyframes rowIn { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform: none; } }`. Titles/headers/legends get `<g class="head">` (delay 0).
-     - *Scale-in for key elements*: key cells / summary boxes enter with `transform: scale(.8→1)` + opacity instead of (or with) the fade.
+     - *Scale-in for key elements*: key cells / summary boxes enter with `transform: scale(.8→1)` + opacity instead of (or with) the fade. **（非站点图专用；blueprint 站点禁用缩放类动画）**
      - *Scan sweep*: a translucent band sweeps top→bottom (or along the reading order) **once** after the reveal — 一次性装饰，**不加 infinite**（滚动到图时早已播完，循环反而机械；常驻动感靠下一档）。
    - **常驻强调（`infinite`，必选其一，见规则 5）**：
      - *Breathing (default, most universal)*: gentle infinite opacity pulse after the reveal (~4s) — whole row `.chgrow` (1↔0.5, 2.4s) + key cell `.chg` (1↔0.45, 2s): the row breathes, the key field breathes harder. Good for register/address maps and anything with "changed/new" fields.
      - *Flow / dash march*: `stroke-dasharray` + animated `stroke-dashoffset` on connectors/arrows — conveys direction on data-flow / pipeline / sequence diagrams.
-     - *Flow packet (流光点)*: duplicate a connector path as a decorative path (`d` identical, `fill="none"`, data-path color, `linecap="round"`); a small light dot travels along the path via `stroke-dasharray "8 (L+80)"` + `stroke-dashoffset` animation (L = numerically computed edge length). One dot per edge, uniform speed (150 pt/s), period = (L+88)/150 s, per-edge `animation-delay` stagger. Details and direction verification in 常驻动效实例「流光点」.
+     - *Flow packet (流光点)*: duplicate a connector path as a decorative path (`d` identical, `fill="none"`, data-path color, `linecap="round"`); a small light dot travels along the path via `stroke-dasharray "8 (L+80)"` + `stroke-dashoffset` animation (L = numerically computed edge length). One dot per edge, uniform speed per diagram (site diagrams: speed floor per blueprint v4), period ∝ (L+88), per-edge `animation-delay` stagger. **Only on edges ≥80px visible length** — short arrows get no packets. Details and direction verification in 常驻动效实例「流光点」.
    - **可选点缀（一次性或短循环）**：
      - *Fill transition*: key cell fill animates neutral→highlight→neutral once after the reveal — the settled color must equal the static color.
    - **常驻动效实例（2026-10-26 实证，hk1v11 站点 6 图，全部通过六项验收）**：
-     - *扫光循环（shine sweep）*：低透明度暖色渐变带周期性扫过整图——`<defs>` 线性渐变（stop-opacity 0→0.18→0）+ 一个 `<rect class="shine">`（高度≈图高 17%）放 `</svg>` 前；CSS `@keyframes shineSweep` 用 `translateY`（竖图自上而下）/ `translateX`（横图自左而右）从 `-band` 扫到 `W/H`，周期 6s（扫掠 ≈2.5s + 出画静息 ≈3.1s）。**静息段带在画外 = 终态即静态图**；呼吸等常驻特效同时在线，静息不构成空档。
+     - *扫光循环（shine sweep）* **[站点图已废除，2026-11-02 → 改用文字光带：光只在文字字形内滑过、白色亮峰，配方见 blueprint v4 / 站内 MOTION_KIT §4；以下整块色带写法仅留作非站点图历史参考]**：低透明度暖色渐变带周期性扫过整图——`<defs>` 线性渐变（stop-opacity 0→0.18→0）+ 一个 `<rect class="shine">`（高度≈图高 17%）放 `</svg>` 前；CSS `@keyframes shineSweep` 用 `translateY`（竖图自上而下）/ `translateX`（横图自左而右）从 `-band` 扫到 `W/H`，周期型（扫掠 + 出画静息）。**静息段带在画外 = 终态即静态图**；呼吸等常驻特效同时在线，静息不构成空档。
      - *边框呼吸（border breathing）*：高亮/门禁盒的 `stroke-opacity` 1↔0.4 脉冲（2.4s ease-in-out，与行呼吸同拍 4s 起）——给汇总盒/门禁框持续存在感。
      - *门禁/标记脉冲（gate pulse）*：特殊标记格（如 checksum 特殊地址黄格）`fill-opacity` 1↔0.45 脉冲（2s）——节点级常驻动效，比整行呼吸更聚焦；多格同脉冲时按 0.13s 错峰（用 `<g>` 包装器承载 delay，不动原元素）。
      - *点波扫描（dot wave，表格/网格逐行状态点用，2026-10-26 实证，hk1v11 5 张寄存器图）*：状态圆点随扫光带逐行脉动——光带扫到哪行，该行点快速一暗一复，形成"阅读扫描"，是流光点在无连接边的表格/网格图上的等价物。实现：① 每个行组（自有 `<g class="row">` 包装器）加 CSS 变量 `--i`（行序号）；② `.row circle { animation: dotWave 6s linear infinite; animation-delay: calc(var(--i, 0) * C s); }`，**C = 扫光扫掠时长(2.5s) ÷ (行数−1)**，点波速度与光带同步；③ keyframes `dotWave { 0%,7%,100% { fill-opacity:1; } 3% { fill-opacity:0.25; } }`（脉冲 ≈0.4s）。纯 CSS，只碰自己的行组 + `<style>`，数据零改动。
-     - *流光点（flow packet，2026-10-26 实证，synthesis-integration-flow-guide 站点脚本总图，通过六项验收）*：复制边 path 模拟数据光点沿线流动，flow/pipeline 图最聚焦的常驻特效。实现：① 每条实线边加一条 `<path class="flowdot">`，`d` 与原边逐字相同，`fill="none"`，`stroke="#0e7490"`（blueprint 站点数据路径色），`stroke-width="2.5"`，`linecap="round"`；② `stroke-dasharray: 8 (L+80)`，L = 边实际长度（Python 解析 M/C 坐标，cubic bezier 采样 ~50 点求长）；③ 每边独立 `@keyframes pktN`（比 `var()`-in-keyframes 稳，零兼容风险）：`from { stroke-dashoffset: L+88 } to { stroke-dashoffset: 0 }`——**dashoffset 递减 = 图案沿路径前进**（源→目标）；④ 周期 = (L+88)/150 s（统一 150 pt/s），`linear infinite`，delay i×0.13 s。**方向两级验证**：解析证 offset=L+88 时光点在起点、递减至终点出画；经验证每条边 path 终点与箭头多边形质心距离 ≤6pt（生成器脚本内置自动跑）。**「流向版」组合（2026-10-26 用户采用）**：无入场动画（图直接静态呈现、零 `opacity:0` 初始态）+ 虚线边 dash march（1.1 s 较快）+ 全部实线边流光点 + 仅 2 个门禁节点呼吸（signoff / TO SIGNOFF，1↔0.55，3.2 s）——视觉焦点全在"数据怎么走"，用户反馈优于 7 类混合特效版（上一版被否）。
+     - *流光点（flow packet，2026-10-26 实证，synthesis-integration-flow-guide 站点脚本总图，通过六项验收）*：复制边 path 模拟数据光点沿线流动，flow/pipeline 图最聚焦的常驻特效。实现：① 每条实线边加一条 `<path class="flowdot">`，`d` 与原边逐字相同，`fill="none"`，`stroke="#0e7490"`（blueprint 站点数据路径色），`stroke-width="2.5"`，`linecap="round"`；② `stroke-dasharray: 8 (L+80)`，L = 边实际长度（Python 解析 M/C 坐标，cubic bezier 采样 ~50 点求长）；③ 每边独立 `@keyframes pktN`（比 `var()`-in-keyframes 稳，零兼容风险）：`from { stroke-dashoffset: L+88 } to { stroke-dashoffset: 0 }`——**dashoffset 递减 = 图案沿路径前进**（源→目标）；④ 周期 ∝ (L+88)（统一速度；**站点图速度下限以 blueprint v4 为准**），`linear infinite`，delay 逐边错开。**方向两级验证**：解析证 offset=L+88 时光点在起点、递减至终点出画；经验证每条边 path 终点与箭头多边形质心距离 ≤6pt（生成器脚本内置自动跑）。**「流向版」组合（2026-10-26 用户采用）**：无入场动画（图直接静态呈现、零 `opacity:0` 初始态）+ 虚线边 dash march（1.1 s 较快）+ 全部实线边流光点 + 仅 2 个门禁节点呼吸（signoff / TO SIGNOFF，1↔0.55，3.2 s）——视觉焦点全在"数据怎么走"，用户反馈优于 7 类混合特效版（上一版被否）。
    - **Hard invariants (any effect choice)**: infinite effects stay subtle and touch only `opacity` / `transform` / `filter` / `stroke-dashoffset` / looping `fill`; settled state == static diagram; never two animations on the same property of one element (a finished `forwards` animation wins the cascade and kills the later one) — use nested groups (outer = reveal, inner = effect); prefer compositor-friendly properties (opacity/transform) on large maps.
-5. **Always-firing effects are mandatory (2026-10-26, ymzhu)**: 站点图片常在页面下半部，用户滚动到图时，一次性 load-time reveal 早已播完——相当于没做。因此每份动画 SVG **必须包含至少一个常驻型 `infinite` 特效**——**无长静息的持续运动（呼吸 / 流动虚线 / 边框呼吸 / 门禁脉冲，周期 2–4s）**；**扫光这类周期型（≈6s、出画静息 ≤3s）必须与一个无静息常驻特效叠加**，用户任何时候滚到图都必须立刻看到在动。**入场类特效（row reveal / 缩放进入 / 扫描扫掠 / 填充过渡）都是一次性装饰：不循环、不需要 infinite 配置、也不计入本规则的要求**（2026-10-26 用户定稿：入场动画不需要循环，没有必要；扫描甚至不需要加 infinite）。
+5. **Always-firing effects are mandatory (2026-10-26, ymzhu)**: 站点图片常在页面下半部，用户滚动到图时，一次性 load-time reveal 早已播完——相当于没做。因此每份动画 SVG **必须包含至少一个常驻型 `infinite` 特效**——**无长静息的持续运动（呼吸 / 流动虚线 / 边框呼吸 / 门禁脉冲）**；**光带这类周期型（扫过 + 出画静息）必须与一个无静息常驻特效叠加**，用户任何时候滚到图都必须立刻看到在动（具体周期以 blueprint v4 为准）。**入场类特效（row reveal / 缩放进入 / 扫描扫掠 / 填充过渡）都是一次性装饰：不循环、不需要 infinite 配置、也不计入本规则的要求**（2026-10-26 用户定稿：入场动画不需要循环，没有必要；扫描甚至不需要加 infinite）。
 6. **Deterministic transform**: for large flat SVGs do not hand-edit. Write a Python script that locates structural units by label, wraps them in `<g>`, and injects `<style>`; save the script next to the output (re-runnable, idempotent).
 7. **Validation (mandatory, all six)**: XML well-formed; `<text>` multiset equality static vs animated; no `<script>`; keyframes present; `viewBox` identity; structural counts (row/head/chg groups) as intended. Optional: cairosvg pixel-compare of final state.
-8. **Site integration**: keep the static file as fallback; serve the animated copy from a subfolder (e.g. `images/anim/`) and point the page's `<img>` at it. Mention both in the page note.
+8. **Site integration**: keep the static file as fallback (static = source of truth); serve the animated copy from `anim/<name>.svg` next to it (blueprint v4 directory contract) and point the page's `<img>` at it. Mention both in the page note.
 
 ### When NOT to animate
 
@@ -512,7 +462,7 @@ python3 -c "import cairosvg; cairosvg.svg2png(url='file.svg', write_to='/tmp/tes
 
 ## SVG → PNG Conversion
 
-Use `$SKILL_ROOT/scripts/generate-diagram.sh` by default. Load `$SKILL_ROOT/references/png-export.md` only when selecting a renderer manually, handling CJK/emoji fallback, converting browser-generated SVG, or using the bundled Puppeteer converter.
+Use `cairosvg` by default (`python3 -c "import cairosvg; cairosvg.svg2png(url='file.svg', write_to='file.png')"`). Load `$SKILL_ROOT/references/png-export.md` only when selecting another renderer manually (`rsvg-convert`, Puppeteer / headless browser), handling CJK/emoji fallback, or converting browser-generated SVG.
 
 ## Styles
 
@@ -545,4 +495,4 @@ These patterns appear frequently — internalize them:
 **Multi-Agent**: Orchestrator → [SubAgent A / SubAgent B / SubAgent C] → Aggregator → Output
 **Tool Call Flow**: LLM → Tool Selector → Tool Execution → Result Parser → LLM (loop)
 
-<!-- ymzhu 2026-10-26 17:55 新增流光点（流向版）实例 -->
+<!-- ymzhu 2026-11-02 19:25 -->

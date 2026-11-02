@@ -1,6 +1,6 @@
 # PNG Export
 
-Load this reference only when the bundled `generate-diagram.sh` fallback is insufficient or a specific renderer must be selected.
+Load this reference when a specific renderer must be selected; the default export path is the manual CairoSVG command below.
 
 ## Renderer Choice
 
@@ -9,13 +9,6 @@ Load this reference only when the bundled `generate-diagram.sh` fallback is insu
 | CairoSVG | `python3 -m pip install cairosvg` | Default; good CSS support |
 | `rsvg-convert` | `brew install librsvg` or `apt install librsvg2-bin` | Simple SVGs without complex CSS |
 | Puppeteer | Node.js plus Chromium | Browser-generated SVG, CJK/emoji fallback, or pixel fidelity |
-
-Prefer the bundled validation/export entry point:
-
-```bash
-SKILL_ROOT="${CLAUDE_SKILL_DIR:-/absolute/path/from-codex-skill-metadata}"
-"$SKILL_ROOT/scripts/generate-diagram.sh" -t architecture -s 1 -o ./diagram.svg -w 1920
-```
 
 ## Manual CairoSVG
 
@@ -31,12 +24,10 @@ rsvg-convert -w 1920 input.svg -o output.png
 
 ## Puppeteer
 
-Install Puppeteer outside the user's project and run the bundled converter:
+Install Puppeteer outside the user's project, then load the SVG in headless Chromium and screenshot it at the SVG's own viewport size (no converter script is bundled with this skill):
 
 ```bash
-SKILL_ROOT="${CLAUDE_SKILL_DIR:-/absolute/path/from-codex-skill-metadata}"
 npm install --prefix /tmp/fireworks-tech-graph-puppeteer puppeteer
-NODE_PATH=/tmp/fireworks-tech-graph-puppeteer/node_modules node "$SKILL_ROOT/scripts/svg2png.js" ./output
 ```
 
 ## Known Limits
@@ -44,3 +35,5 @@ NODE_PATH=/tmp/fireworks-tech-graph-puppeteer/node_modules node "$SKILL_ROOT/scr
 - `rsvg-convert` can omit complex CSS, filters, and `<foreignObject>` content.
 - CairoSVG can miss CJK or emoji glyphs when the selected system font lacks them.
 - Use Puppeteer when browser rendering is required; its viewport path preserves the SVG dimensions more reliably than a raw Chrome `--window-size` screenshot.
+
+<!-- ymzhu 2026-11-02 17:57 -->

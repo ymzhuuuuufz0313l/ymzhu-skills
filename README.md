@@ -24,7 +24,7 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 | `xilinx-suite` | Xilinx(AMD) FPGA/MPSoC 全工具链参考：Vivado XDC 约束、Tcl、综合实现、报告分析、CDC/时序例外（源自 MIT 开源库，按 HK1V11 VU440 场景改编） |
 | `server-pack-overlay` | 服务器回传包（PACK_TAR_*.tar.gz）提取 + 合并式覆盖规则（SYNTHESIS/HDL/DV_TCON_C 三类包口径） |
 | `version-archive` | 多版本归档目录维护规则：目录内 CHANGES.md 总览 + README 版本速查表 + 双轨记录 |
-| `sta-csv-table-png` | 芯片分析数据 → 网站 PNG：① PT summary csv → to-signoff 同款表格图 ② 功耗/违例对比条形图 + 组成环形图（matplotlib） |
+| `pil-table-render` | PIL 表格图渲染规范（两节）：一、PowerPro / teal 表头表格图（字体一致性/基线对齐/评审避坑）；二、STA csv 表格图（PT summary csv → to-signoff 同款表格图）+ 功耗/违例对比条形图 + 组成环形图（matplotlib） |
 | `team-share` | team-share VitePress 知识库维护 + 独立公开文章发布 |
 
 ### 工作流 / 记录
@@ -60,4 +60,4 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 | `office-com-reader` | 读取加密/受保护的 Office（xlsx/docx/pptx）与 PDF：原生 COM API + pypdf + Acrobat COM 兜底，兼容企业 DLP 透明加密 |
 | `colleague-skill`（distilly） | 把同事/关系/名人素材蒸馏成可复用的 Person Profile |
 
-<!-- ymzhu 2026-10-28 18:19 -->
+<!-- ymzhu 2026-11-02 18:05 -->
