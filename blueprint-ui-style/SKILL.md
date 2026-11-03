@@ -242,6 +242,8 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 3. **组件模板源码（活模板）**：`E:\project\team-share-public\hk1v11-synthesis-postpt-practice\` 的 `css/style.css`（组件唯一事实源）、`js/site.js`、`js/lightbox.js`、`fx.css`、`fx.js`（v4 引擎）；
 4. **参考站的动效事实源**：`hk1v11-longcode-420b-verification/anim/MOTION_KIT.md`（v4 kit）。
 
+> **活模板路径兜底**：上列 `E:\project\...` 活模板均指本机当前实际位置；若某路径失效（目录被移动/删除/改名），先在 `team-share-public` 仓库内按目录名重新定位，定位不到再向用户确认新路径——**禁止凭失效路径硬做或凭空重建骨架/模板**。
+
 ### 0.5 核心框架定死（2026-10-28 用户定调："不然模型会放飞自我"）
 
 **骨架、目录、文件集、技术栈、引用顺序全部定死，模型只填内容槽，不写结构。** 唯一骨架来源 = `site-template/`（禁止从零手写页面骨架）；固定文件（css/style.css、js/site.js 除 NAV 数组、js/lightbox.js、js/marked.min.js、fx.js、fx.css、页面骨架的 head/导航/容器/脚本顺序）逐字使用禁改；内容槽清单与禁止清单见 `site-template/README.md`（新框架/新依赖/新组件/新目录层级/第二套按钮/绕过双版管线，一律 ❌）。
