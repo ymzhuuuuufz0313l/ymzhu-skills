@@ -258,6 +258,7 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 | `fx.css` · `fx.js` | `site-template/` 逐字副本（= 全仓库引擎，9 处一致） | **禁改**；引用统一带 `?v=N`，引擎升级由全仓库统一 bump |
 | `<name>.svg`（静态）+ `anim/<name>.svg` + `anim/make_anim_<name>.py` | v4 双版管线 | 按 v4 架构章 + MOTION_KIT v4；HTML 只引用动画版 |
 | `anim/MOTION_KIT.md` | 从 longcode 站复制 | 改"路径"与"分图规格"两节为本站实际；kit CSS 与铁律禁改 |
+| `images/` 骨架（`archive/` + `tools/`） | 建站时新建空目录 | **建站即建** `images/archive/`（含 `qa/`）与 `images/tools/` 骨架；换版归档按「图版生命周期与归档标准」章执行 |
 | 根导航登记 | team-share-public 根 `index.html` | 新站入口登记进站点列表 |
 
 ### 2. 内容即模块
@@ -279,6 +280,31 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 - [ ] v4 验证门四条全过（成对完整/切换零位移/稳态可辨/生成物零漂移）
 - [ ] 根导航已登记；页面在 file:// 与构建预览下均正常
 
+## 图版生命周期与归档标准（2026-11-04 用户拍板，team-share 全站点强制）
+
+> 解决的问题：旧版图随换版被覆盖/删除，历史报告引用断供。首案例（2026-11-04 落地）：`E:\project\team-share-public\hk1v11-synthesis-postpt-practice\images\`。
+
+**规则 5 条：**
+
+1. **主名即当前采纳版**：站点图（svg 表图/示意图）主文件名固定（如 `51_signoff_setup_hk11.svg`）＝ 当前采纳版；HTML 引用主名（v4 双版站点经 `anim/` 引用同名文件），**换版不断链**。
+2. **换版必快照、任何图永不删除**：新版本采纳时，被替换的整套图（静态 svg + 动画 svg + PNG）快照进 `images/archive/<采纳日期YYYYMMDD>/`，文件名带版本标签（如 `_1104v0`）。
+3. **PNG/位图报告素材只进日期文件夹**，不占 `images/` 主名位。
+4. **图生成脚本统一归 `images/tools/`**：每个脚本标注生成哪组图；历史图可复跑重造。
+5. **站根/仓库根不落裸图**：QA 截图进 `images/archive/qa/<日期>/`。
+
+目录树示例（与 v4 双版契约叠加，`anim/` 约定照旧）：
+
+```
+<站点>/
+└── images/
+    ├── 51_signoff_setup_hk11.svg              # 主名位 = 当前采纳版（静态版事实源）
+    ├── anim/51_signoff_setup_hk11.svg         # 动画版（v4 契约不变，HTML 引用动画版）
+    ├── tools/gen_signoff_tables.py            # 生成脚本归位（脚本头标注生成哪组图）
+    └── archive/                               # 永不删除
+        ├── 20261104/                          # 换版快照：被替换整套图（静态 + 动画 + PNG）
+        │   └── 51_signoff_setup_hk11_1104v0.svg   # 快照文件名带版本标签
+        └── qa/20261104/                       # QA 截图按日期归档
+```
 
 ## 反模式（避免）
 
@@ -297,4 +323,4 @@ HTML 引用一律指向动画版（`anim/xxx.svg`）；无静态对照的单文�
 <!-- ymzhu 2026-10-26 19:10 -->
 <!-- v4 动画架构章新增于 2026-10-28 -->
 <!-- v4.3 清晰缩放章新增于 2026-10-29 -->
-<!-- ymzhu 2026-11-03 12:40 -->
+<!-- ymzhu 2026-11-04 14:10 -->
