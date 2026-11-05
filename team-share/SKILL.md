@@ -44,7 +44,7 @@ description: Maintain the team-share VitePress knowledge base and publish standa
 6. **fx 特效引擎**：骨架 `index.html` / `page.html` 已自带 `fx.css` / `fx.js` 双 tag，**禁止删除、禁止改引擎文件**；`?v=` 取全仓库当前统一值。规范见仓库根级 `PAGE_FX.md`。
 7. **根占位页**：`E:\project\team-share-public\index.html` 不存在则建一个简单占位页；并在根导航登记新文章入口。
 8. **更新** `README.md`，加上文章 URL。
-9. **发布前门禁（强制）**：`python E:\project\team-share-public\scripts\check_article.py <slug>`，**必须 exit 0 才能提交**。门禁失败 → 修页面，不许绕过。
+9. **发布前门禁（强制）**：`python E:\project\team-share-public\scripts\check_article.py <slug>`，**必须 exit 0 才能提交**。门禁失败 → 修页面，不许绕过。若本次涉及 fx 引擎（fx.css/fx.js）修改：加跑 `python E:\project\team-share-public\scripts\check_fx_clip.py` 亦必须 exit 0（clip:text 恒定着色门禁，fxFlowShine 始/终态残缺事故 2026-11-05 后新增，规则详见 team-share-public 根级 PAGE_FX.md §5.6）；引擎副本同步后须 md5 校验 9 处一致（PAGE_FX §0）。
 10. **提交推送**：`cd "E:\project\team-share-public"` → `git add .` → `git commit -m "Add shared article: <slug>"` → `git push origin main`。push 失败且原因是远程仓库不存在 → 让用户先建仓库。
 11. **GitHub Pages**（未配置时指导用户）：仓库 Settings → Pages → Source: Deploy from a branch → `main` / `/ (root)`。
 12. **报告 URL**：`https://ymzhuuuuufz0313l.github.io/team-share-public/<slug>/`
@@ -105,10 +105,10 @@ description: Maintain the team-share VitePress knowledge base and publish standa
 
 ## 自查清单（生成 / 更新页面后逐项确认）
 
-1. `check_article.py <slug>` exit 0（自动覆盖：fx 双 tag 各 1 次、lightbox、TOC 折叠、标题编号、导航 ≤ 首页 + 9、尾签名）。
+1. `check_article.py <slug>` exit 0（自动覆盖：fx 双 tag 各 1 次、lightbox、TOC 折叠、标题编号、导航 ≤ 首页 + 9、尾签名）。改 fx 引擎时另有 `check_fx_clip.py` exit 0 + 9 副本 md5 一致（PAGE_FX §5）。
 2. lightbox：正文每张图（含 SVG 引用图）点开能放大；滚轮缩放 0.5x–12x（以模板 js/lightbox.js 实际钳制为准）；可拖拽；Esc 与点遮罩关闭；打开时正文不滚动、关闭后恢复。
 3. TOC：有 h3 子项的 h2 有箭头、无子项的没有；点箭头只折叠不跳转；子项折叠时滚到组内 h3，高亮落在父级 h2；默认全展开；h3 文字明显缩进在 h2 之后；TOC 里能看到 `1.` / `1.1` 编号。
 4. 导航：当前页高亮；移动端可横向滚动；全站度量一致。
 5. 动/静切换按钮在顶部导航（由 fx.js 注入，页面不得硬编码 `#motionToggle`）；`?motion=static` 下内容完整、无半透明残留。
 
-<!-- ymzhu 2026-11-02 19:25 -->
+<!-- ymzhu 2026-11-05 14:25 -->
