@@ -5,8 +5,22 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 # 服务器回传包提取与合并式覆盖规则
 
-> 从服务器搬回本机的三类包（SYNTHESIS / RTL-HDL / DV_TCON_C）处理手册。沉淀自 0921V3/V4/V5、0920 系列与 0923 规则修订。
-> **核心原则：合并式覆盖——同名文件覆盖、新增文件添加、本地独有文件保留；禁止暴力文件夹整替**（本地可能有只在本机用的脚本，整替会误删）。个别敏感对象（约束/公共时钟文件）先评估再动。
+> 从服务器搬回本机的三类包（SYNTHESIS / RTL-HDL / DV_TCON_C）处理手册。沉淀自 0921V3/V4/V5、0920 系列与 2026-09-23 规则修订、2026-11-05 diff-first 修订（1105 事故：1028 包 BIT_SWAP 补丁漏采 → KCODE 找不到）。
+> **核心原则：合并式覆盖——同名文件覆盖、新增文件添加、本地独有文件保留；禁止暴力文件夹整替**（本地可能有只在本机用的脚本，整替会误删）。
+> **diff-first（2026-11-05 起强制）：覆盖哪些文件由人拍板，agent 只跑脚本、报全集、执行批准清单，不得自行取舍。**
+
+## 0A. diff-first 强制流程（v2，2026-11-05 起取代"agent 自行选文件"）
+
+1. **回传包落地后第一动作**：跑 `python ~/.dsh/skills/server-pack-overlay/pack_diff.py <pack.tar.gz> --out <report.md>`
+   （脚本随 skill 分发、进 ymzhu-skills 仓库；HK1V11 项目内 `script/pack_diff.py` 为同步副本，改 skill 版后同步过去）
+   - **DV_TCON_C / HDL(RTL) / SYNTHESIS 三类包通用**（自动识别 `../../../project/.../<AREA>/` 与顶层 `<AREA>/` 两种布局）；他人区布局用 `--map VERIFICATION=DV_TCON_C` 映射；只比对部分区用 `--areas HDL,SYNTHESIS`；>4MB 大文件自动 md5-only（SYNTHESIS 大 rpt 保护）；local 侧用 `git ls-files` 枚举（天然排除 gitignore 解压产物噪音）
+   - 全量 md5 比对（不依赖 mtime、不抽样、不排除目录），产出五桶全集：`identical / eol_only / diff / pack_only / local_only`
+   - 每个 diff 附：包/本地大小、本地 git 最后提交、首 hunk 摘要、建议标签（`LOG-JUNK`/`PRISTINE`/`IPCONS`/`REGGEN`——**仅提示，无约束力**）
+2. **反馈**：把报告完整交给用户（diff 桶逐文件、其余桶可汇总计数+清单）。**不做任何"这个该覆盖/那个不该"的替用户决定**——历史教训：1028 overlay 的 changed-list 不完整，isptx_driver.sv 的 BIT_SWAP 分支与 boe_test/user_def.sv 的 `define BIT_SWAP` 双双漏采，本地一直缺补丁，直接引发 KCODE 找不到排查。
+3. **拍板**：用户逐文件/逐类批准 → 批准路径写入 `approved.txt`（含 `REGGEN` 类时提醒"覆盖生成物 ≠ 重新生成，寄存器类 env_cfg 建议走 update_env_cfg.py 重生成"即可，仍由用户定）。
+4. **执行**：`python pack_diff.py <pack.tar.gz> --apply approved.txt` → 机械覆盖、仅覆盖批准项，产出 `<approved>.applied.txt` 落地清单。
+5. **记录**：applied 清单进 `修改记录/CHANGES.md` + 中间版本说明；RTL 三关仍不适用于包覆盖。
+6. 大包（数百 MB）跑 pack_diff 用后台任务执行，避免前台超时中断。
 
 ## 0. 包定位与目录映射
 
@@ -92,4 +106,4 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 **交互探针必须复刻完整 setup 链（0930 探针污染教训）**：在 bsub 节点上做增量精修/what-if 实验时，只 source design.set + clk_period + ip_cons **不够**——必须补齐 `dont_use_all.tcl`（流程禁用 *SFF*/*X05* 等单元族；漏 source 会导致 DC 自由使用禁用单元，实验数字成为"放宽规则的上界"，不代表生产环境）。完整链：design.set → clk_period.tcl → ip_cons → **dont_use_all.tcl** → 目标库 target/link_library 设置 → read_ddc/网表 → 实验。库限制在 `SYNTHESIS/common/tcl_dir/dc/dont_use_all.tcl`。
 
-<!-- ymzhu 2026-10-22 15:22 -->
+<!-- ymzhu 2026-11-05 15:52 -->
