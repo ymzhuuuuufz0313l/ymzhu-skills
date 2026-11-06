@@ -14,7 +14,8 @@ disable-model-invocation: false
 | 模型 | 定位（2026-09-30 用户策略） |
 |---|---|
 | GLM-5.3 / GLM-5.3-flash / GLM-5.3-flashx | **默认主力**：已开 GLM 高级别套餐，一切派发优先 GLM 系（高强度用 GLM-5.3；快/大规模用 flash；不确定就直派继承当前路由） |
-| Qwen（xxw/Qwen） | **交叉验证 fallback**：⚠️ 仅 256K 上下文的小模型。**deepseek（默认路由 `deepseek-official/deepseek-flash`）接通时优先用 deepseek**（subagent 省略 provider/model 继承当前路由），仅 deepseek 不可用（API 报错/超时）才 fallback 到 xxw/Qwen。派发输入必须精简：prompt 紧凑自包含（目标 + 必要文件路径），让 Qwen 自己去读文件，绝不内联大段文件内容、长背景或长输出 |
+| DeepSeek（xxw/DeepSeek） | **xxw 首选**：xxw provider 下的 DeepSeek 模型（baseURL 172.16.185.4:3000/v1）。**多 subagent 时，xxw 提供的模型（Qwen / DeepSeek）里 DeepSeek 接通就优先用 xxw/DeepSeek**；仅 xxw/DeepSeek 不可用（API 报错/超时/不接通）才 fallback 到 xxw/Qwen。⚠️ 需 subagent `allowedModels` 显式含 `xxw/DeepSeek`（2026-11-06 已加进 `profiles/desktop/cordis.patch.yml`；显式 `provider+model` 可绕过 catalog 热加载，不重启即用）。 |
+| Qwen（xxw/Qwen） | **xxw fallback**：⚠️ 仅 256K 上下文的小模型，xxw/DeepSeek 不可用时的兜底。派发输入必须精简：prompt 紧凑自包含（目标 + 必要文件路径），让 Qwen 自己去读文件，绝不内联大段文件内容、长背景或长输出 |
 
 **实测事实（2026-09-29/30）**：`subagent` 支持 `provider`/`model` 跨模型覆盖（Qwen / GLM-5.3 均实测通过）。同模型同任务对比：subagent 与 agent-teams 成员产出质量相当，subagent 更快、机制更轻。**默认用 subagent，不建 agent-teams 队**（除非用户明确要求团队模式）。agent-teams 插件自桌面 0.2.0-rc.2 起全功能正常（2026-10-04 实测：建队/调度/任务板/成员执行/完成报告全链路通过），用户点名团队模式时直接用。
 
@@ -22,8 +23,8 @@ disable-model-invocation: false
 
 ## 派发协议
 
-1. **选模型**：默认 GLM 系（高强度任务 GLM-5.3；快/大规模 GLM-5.3-flash；不确定就直派继承当前路由）。**多 subagent 时，对 xxw 提供的模型（xxw/Qwen）：deepseek（默认路由 `deepseek-official/deepseek-flash`）接通就优先选 deepseek**（继承当前路由，无需显式 provider），仅 deepseek 不可用（API 报错/超时/不接通）才显式路由到 xxw/Qwen。"deepseek 接通"判断：当前主会话正常跑（它本身就用 deepseek 默认路由）即接通。
-2. **交叉验证与脏活派发（由模型判断，非机械）**：派发实质工作任务时，**由你思考判断**是否需要额外派发交叉验证——不要求每个任务都同步双派。交叉验证模型按第 1 步规则选（deepseek 接通用 deepseek，否则 xxw/Qwen）。
+1. **选模型**：默认 GLM 系（高强度任务 GLM-5.3；快/大规模 GLM-5.3-flash；不确定就直派继承当前路由）。**多 subagent 时，对 xxw 提供的模型（Qwen / DeepSeek）：xxw/DeepSeek 接通就优先选 xxw/DeepSeek**（显式 `provider=xxw, model=DeepSeek`），仅 xxw/DeepSeek 不可用（API 报错/超时/不接通）才 fallback 到 xxw/Qwen。"xxw/DeepSeek 接通"判断：显式路由能正常调用（无 API 报错/超时）即接通。
+2. **交叉验证与脏活派发（由模型判断，非机械）**：派发实质工作任务时，**由你思考判断**是否需要额外派发交叉验证——不要求每个任务都同步双派。交叉验证模型按第 1 步规则选（xxw 场景：DeepSeek 接通优先 xxw/DeepSeek，否则 xxw/Qwen）。
 
    **值得派发的场景（鼓励多派，不必吝啬 token）：**
    - 任务结论会作为后续决策的**唯一依据**（比如"这个 bug 的根因是什么"→ 错了全盘错）
