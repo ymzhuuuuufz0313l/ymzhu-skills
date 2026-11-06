@@ -191,6 +191,7 @@ def do_report(pack, out_path):
 def do_apply(pack, approved):
     want = set(l.strip() for l in open(approved, encoding='utf-8') if l.strip() and not l.startswith('#'))
     done = []
+    skip = {}   # key -> 原因（Windows 非法名/超长路径等物理不可落地，机械跳过并留痕）
     with tarfile.open(pack, 'r:gz') as t:   # 顺序流一遍，命中即写
         for m in t:
             if not m.isfile():
@@ -203,14 +204,23 @@ def do_apply(pack, approved):
             if key not in want:
                 continue
             lp = os.path.join(LOCAL_ROOT, area, rel.replace('/', os.sep))
-            os.makedirs(os.path.dirname(lp), exist_ok=True)
-            open(lp, 'wb').write(t.extractfile(m).read())
-            done.append(key)
-    miss = sorted(want - set(done))
-    print(f'[apply] 覆盖 {len(done)} 个文件; 未命中 {len(miss)} 个')
+            try:
+                os.makedirs(os.path.dirname(lp), exist_ok=True)
+                open(lp, 'wb').write(t.extractfile(m).read())
+                done.append(key)
+            except OSError as e:
+                skip[key] = f'{type(e).__name__}: {e}'
+    miss = sorted(want - set(done) - set(skip))
+    print(f'[apply] 覆盖 {len(done)} 个文件; 跳过 {len(skip)} 个; 未命中 {len(miss)} 个')
     for k in miss: print(f'  MISS: {k}')
+    for k in sorted(skip): print(f'  SKIP: {k}  ({skip[k]})')
     rec = approved + '.applied.txt'
     open(rec, 'w', encoding='utf-8').write('\n'.join(done) + '\n')
+    if skip:
+        sk = approved + '.skipped.txt'
+        open(sk, 'w', encoding='utf-8').write(
+            '\n'.join(f'{k}\t{skip[k]}' for k in sorted(skip)) + '\n')
+        print(f'[apply] 跳过清单已写入 {sk}')
     print(f'[apply] 落地清单已写入 {rec}（供 CHANGES 记录）')
 
 def main():
@@ -237,4 +247,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-# ymzhu 2026-11-05 15:52
+# ymzhu 2026-11-06 18:08
