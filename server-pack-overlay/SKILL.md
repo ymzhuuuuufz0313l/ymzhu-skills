@@ -24,10 +24,9 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 ## 0. 包定位与目录映射
 
-1. **包在服务器上，agent 用 dsh-ssh 插件自己拉取（不再依赖用户手动下载）**：
-   - 定位：`ssh_exec`（alias=IC_EDA）`ls -lh /home/ICer/work/HK1V11/script/PACK_TAR_*.tar.gz`
-   - 拉取：`ssh_download` remotePath=`/home/ICer/work/HK1V11/script/PACK_TAR_<ver>_<date>.tar.gz` → localPath=`C:\Users\zhuyanming\Downloads\`
-   - 用户已手动下载过（包已在 Downloads）则跳过拉取，直接进解压。
+1. **远端操作默认禁用（2026-11-06 ymzhu 指令，取代旧"agent 自己拉取"规则）**：回传包一律由**用户手动下载**到 `C:\Users\zhuyanming\Downloads\`（包源通常是内网工作站，与 IC_EDA VM 无关），agent 从 Downloads 起步。未经用户**当次会话明确授权**，agent 不得对任何 ssh 远端主机（IC_EDA VM、内网工作站或其他一切主机）执行 ssh_exec / ssh_upload / ssh_download / ssh_tunnel / ssh_cluster 操作——包括 ls 探查等"只读"命令一律禁止（2026-11-06 教训：agent 依据旧规则自行 ssh 探查 VM 被叫停；回传源头是内网工作站，与 VM 无关）。
+   - 仅当用户在当前对话明确点名某主机并说"去上面××"时才可动用对应 ssh 工具，且该授权**不延续**到后续轮次/后续会话。
+   - 包已在 Downloads（用户已下载）则直接进解压/比对。
 2. **编号与内容的对应以包内实际路径自证**（解开后看包内是 `SYNTHESIS/`、`HDL/` 还是 `DV_TCON_C/`），不要凭编号顺序猜。
 3. 解压目标（历史惯例命名，放 `E:\project\HK1V11\script\` 下）：
    - SYNTHESIS → `script\_syn_<ver>\`（如 `_syn_0924v2`）
@@ -66,6 +65,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 **合并式覆盖到本地 `HDL\`**（与 DV_TCON_C 同一套规则）：同名文件覆盖、新增文件添加（影响 file_list 就同步 `.f`）、本地独有文件保留。
 
 - 覆盖是**同步动作，不做 check/评审**——只记录覆盖/新增/保留了哪些文件，写进 `README_中间版本说明.md`（快照来源 + diff 摘要 + 文件清单），文末签名。
+- **寄存器相关模块特别 diff（2026-11-06 ymzhu 要求）**：HDL 包内 LC_CPUWR / LC_REG_MAPPING / LC_REG* / R_REG* 体系等寄存器相关文件必须从普通 diff 清单中**单列呈报**（完整差异，不并入汇总）；批准覆盖后按 version-archive 规则维护 `LC_CPUWR_history/`（固定文件名+文件头版本号、目录内 CHANGES.md 与根级修改记录双轨、README 版本速查表），并登记 `back3.HK1V11_changelist.xlsx` Register Change 表。
 - RTL 三关（iverilog / rtl-code-review / rtl-signal-trace）**不适用**于包覆盖：那是"本地自行修改 RTL 功能并发布新版本"时才走的流程；服务器回传包是权威交付物的搬运。
 
 ## 4. DV_TCON_C 包
@@ -82,6 +82,8 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 - 时间线意识：服务器 run 的时间戳可能**早于本地最新约束修改**——汇报时明确"服务器吃到了哪一代，哪些没吃到"。
 
 ## 6. 服务器 EDA 工具启动（dsh-ssh 插件执行，2026-09-30 dc_shell 实测，2026-10-22 修订）
+
+> **⚠️ 默认禁用（2026-11-06 ymzhu 指令）**：本节全部远端操作（bsub / dc_shell / pt_shell / 远端文件操作）仅在用户**当次会话明确授权**后执行；未授权时 agent 一律不碰任何远端主机（含 IC_EDA VM），以下命令模板只作参考存档。
 
 **服务器操作一律走 dsh-ssh 插件**：alias=IC_EDA（root@192.168.206.128，key 免密，tags `[eda, hk1v11]`），先 `ssh_list` 确认再执行。路径约定：服务器项目根 `/home/ICer/work/HK1V11/`（与本地 `E:\project\HK1V11` 同构）；**本机（dsh host）的文件/命令用本地工具，ssh_* 只针对远端**，两类路径勿混。
 
@@ -106,4 +108,4 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 **交互探针必须复刻完整 setup 链（0930 探针污染教训）**：在 bsub 节点上做增量精修/what-if 实验时，只 source design.set + clk_period + ip_cons **不够**——必须补齐 `dont_use_all.tcl`（流程禁用 *SFF*/*X05* 等单元族；漏 source 会导致 DC 自由使用禁用单元，实验数字成为"放宽规则的上界"，不代表生产环境）。完整链：design.set → clk_period.tcl → ip_cons → **dont_use_all.tcl** → 目标库 target/link_library 设置 → read_ddc/网表 → 实验。库限制在 `SYNTHESIS/common/tcl_dir/dc/dont_use_all.tcl`。
 
-<!-- ymzhu 2026-11-05 15:52 -->
+<!-- ymzhu 2026-11-06 17:45 -->
