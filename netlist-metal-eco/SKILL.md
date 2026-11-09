@@ -1,6 +1,6 @@
 ---
 name: netlist-metal-eco
-description: 网表级金属层 ECO 找可复用门 + 三步金属层改线全流程。当 base 层冻结、只能改 metal/via 重走线（不能新增/resize/move cell）时，判断"能不能做"取决于有没有可重新接线的现存逻辑门。核心方法论是"死锥分析"而非"输出网 0 负载"。触发词：怎么找ECO门、找可复用门、死锥分析、金属层ECO、ECO改线、找spare、spare扫描、&~门、AND2B1、NAND2B1、网表复用门、metal ECO 可行性。
+description: 网表级金属层 ECO 找可复用门 + 三步金属层改线全流程。当 base 层冻结、只能改 metal/via 重走线（不能新增/resize/move cell）时，判断"能不能做"取决于有没有可重新接线的现存逻辑门。核心方法论是"死锥分析"而非"输出网 0 负载"。触发词：怎么找ECO门、找可复用门、死锥分析、金属层ECO、ECO改线、找spare、spare扫描、&~门、AND2B1、NAND2B1、网表复用门、metal ECO 可行性、RB、SB、Set Bar、Reset Bar、B2、cell 命名、X1 驱动。
 ---
 
 # netlist-metal-eco — 网表级金属层 ECO：找可复用门 + 三步改线
@@ -145,7 +145,74 @@ description: 网表级金属层 ECO 找可复用门 + 三步金属层改线全�
 
 ---
 
-## 三、命令速查
+## 三、引脚与 cell 名速查（RB/SB、I1/B2、命名拆解）
+
+> 本章是「二、3 极性判定」的**引脚/命名级补强**：把 `.RB`/`.SB` 的真实有效电平、`I1`/`B2` 记号、cell 名拆解固定下来，避免再把 `.RB`/`.SB` 记成"一低一高"。所有数字与行号均由 Captain 在 `/e/tmp/HV1V22_digital_top.v` 主网表核实，**禁止按印象改数**。
+
+### 1. 异步端：RB = 低有效复位，SB = 低有效置位（不是"RB 低有效 / SB 高有效"）
+
+| 引脚 | 全称 | 有效电平 | 动作 |
+|---|---|---|---|
+| `.RB` | Reset **Bar** | 低（=0 有效） | Q → 0 |
+| `.SB` | Set **Bar** | 低（=0 有效） | Q → 1 |
+
+- **RB 与 SB 都是低有效**，区别只是动作内容（清零 vs 置 1）。不是"RB 低有效、SB 高有效"。
+- **实证（同模块）**：`DFFSBQX1AL9 BLANK_EN_CNT_reg (.Q(n25),.CK(DCLK_clone3),.D(n388),.SB(N_RST_NLOCK0_ECO_fix_trans_net0))`
+  对应 RTL `LC_CSPIF_L0.v:972 if(!N_RST_NLOCK) BLANK_EN_CNT <= #1 1'b1;` → 复位信号低有效时 Q 变 1 = **set**。
+- **本库无高有效异步端**：`.R(` 命中 **0** 次；`.S(` **356** 次全是 FA/HA 加法器的 Sum 引脚，与复位/置位无关。
+  DFF 家族统计（主网表）：`DFFRBQ` **949**、`DFFRBQB` **114**、`DFFSBQ` **119**、`DFFSBQB` **2**、`DFFRSBQ` **1**，全部带 `B`。
+- **综合器选端规律（重要）**：按**复位值**挑端——复位到 0 → `.RB`；复位到 1 → `.SB`。
+  所以口诀是"**想清零就找 `.RB`，想置 1 就找 `.SB`**"，而不是按有效电平分。
+- **本项目实证**：`DATA_NUM_CNT` 9 个 flop（主网表 8622–8662）全 `DFFRBQ*AL9` + `.RB(FE_OFN59_N_RST_NLOCK0)`，
+  **无一个 `.SB`**，对应 RTL `if(!N_RST_NLOCK) DATA_NUM_CNT <= 10'd0;`（复位值 0 → 选 `.RB`，与上面规律一致）。
+
+### 2. 引脚记号
+
+| 记号 | 全称 | 含义 |
+|---|---|---|
+| `.I1` | Input 1 | 正相输入 |
+| `.B2` | Bar input 2 | **反相**输入（进内部先取反）|
+| `.O` | Output | 组合门输出 |
+| `.Q` / `.QB` | Q / Q-Bar | flop 正相 / 反相输出 |
+| `.CK` / `.D` | Clock / Data | 时钟 / 数据 |
+| `.RB` / `.SB` | Reset Bar / Set Bar | 低有效异步复位 / 置位 |
+
+### 3. cell 名拆解 `NAND2B1X1AL9`
+
+| 段 | 含义 |
+|---|---|
+| `NAND` | 门类型（`AND/OR/NOR/INV/AOI/OAI/MUX2/CLKBUF` 同位置）|
+| `2` | 输入个数 |
+| `B1` | **1 个反相输入**（B=Bar）→ 引脚是 `.I1` + `.B2`，不是 `.I1` + `.I2` |
+| `X1` | 驱动强度 1×（同族 `X05`=0.5×、`X2`=2×、`X4`=4×、`X16N`）|
+| `AL9` | 库/工艺版本后缀，与逻辑功能无关（属库命名惯例，仓库无 `.lib` 可实证——如引用须标注"惯例推断"）|
+
+**套用表**：
+- `AND2B1X2AL9` = 2 输入与 + 1 反相输入 + 2× → `O = I1 & ~B2`
+- `NAND2B1X1AL9` = 2 输入与非 + 1 反相输入 + 1× → `O = ~(I1 & ~B2)`
+- `NAND4X1AL9` = 4 输入与非、无取反、1×
+- `DFFRBQX05AL9` = DFF / Reset Bar / Q 输出 / 0.5×
+- `DFFRBQBX1AL9` = 同上 + QB 输出 / 1×
+- `DFFSBQX1AL9` = DFF / Set Bar / Q 输出 / 1×（置位型，注意是 SB 不是 RB）
+
+### 4. 极性速判（接到「二、3 极性判定」的强化结论）
+
+要 `A & ~B` 驱**低有效** `.RB`：
+- `AND2B1` = `I1 & ~B2` → **1 门，正解**（零反相器）；
+- `NAND2B1` = `~(I1 & ~B2)` → **全反**（该复位时输出 1），直驱 `.RB` 是**功能 bug**；
+- `NAND2B1` + 一级反相（死锥内借 `NAND2`，两输入并接）→ **2 门，纯金属层下唯一可行**，代价 +1 级门延迟；
+- `AND2`(`I1 & I2`) + 现成反相网也可，但需要 AND2 零件；**本仓死锥内无 AND2**。
+
+**现网定式实证**：`AND2B1X2AL9 U1 (.O(I2C_RSTN),.B2(STOP_PULSE),.I1(FE_OFN39_N_RST0))` 驱动 **33** 个 `.RB`，
+对应 RTL `I2C_CLK_GEN.v:39 I2C_RSTN = RSTN & ~STOP_PULSE` → 证明 `A & ~B` → 低有效 `.RB` = **AND2B1**（`O=I1&~B2`）。
+
+> **溯源**：本章内容由 Captain 逐条核过 `/e/tmp/HV1V22_digital_top.v` 主网表（t16 沉淀），行号/数字见
+> `script/eco_verify/L8_pin_naming_qa.md`。自查命令用**转义**写法：`grep -o '\.RB(' main.v | wc -l` 期望 **1353**、
+> `grep -o '\.SB(' main.v | wc -l` 期望 **122**；未转义的 `.RB` 会得虚高 2756，是坑。
+
+---
+
+## 四、命令速查
 
 ```bash
 # 1) 解压 post-route 网表
@@ -171,7 +238,7 @@ grep -oE "\.RB\(I2C_RSTN\)" main.v | sort | uniq -c                        # 期
 
 ---
 
-## 四、坑与禁忌（再读一遍）
+## 五、坑与禁忌（再读一遍）
 
 1. **别用"输出网 0 负载"当唯一判据**——它抓不到死锥（有负载但整锥死）。轻则漏检，重则把"可行"判成"不可行"。
 2. **别把"没有 SPARE cell"当"没有可复用门"**——SPARE cell（设计预留）与死锥门（综合残留）本质不同；
