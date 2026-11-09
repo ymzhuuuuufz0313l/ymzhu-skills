@@ -8,7 +8,7 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 - 不需要手动调用：说对应触发词（如"检查 RTL"、"写日报"、"服务器包"）即命中；每个 `SKILL.md` 头部都列了触发词。
 - 新增 skill 时：独立目录 + `SKILL.md`，职责尽量合并进已有 skill，避免拆太碎。
 
-## Skill 一览（25 个）
+## Skill 一览（26 个）
 
 ### 芯片设计 / RTL
 
@@ -20,6 +20,7 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 | `regmap-pipeline` | 寄存器单一事实源：`regmap.md` → 寄存器文档（MD + CMSIS-SVD）+ SVA 断言 + RTL↔表一致性检查 |
 | `spec-traceability` | spec↔code 轻量追溯：REQ_ID 分配/唯一性、spec hash 漂移检测、版本一致性审计 |
 | `digital-backend-pitfalls` | 数字后端经验坑集：cell 引用稳定性（post-route 探针/999 哨兵）、跨工具 SDC、ICG 复位机制、蓝/红路径约束矩阵（DC/PT vs Innovus/ICC） |
+| `netlist-metal-eco` | 网表级金属层 ECO：死锥分析找可复用门（`&~`/AND2B1/NAND2B1）+ 三步金属层重接线 + 极性判定 + 驱动/时序/功能风险闸门；判断"只改走线可不可行" |
 | `local-simulation` | Windows 本机开源工具链（Icarus Verilog + GTKWave / Yosys）跑 Verilog/SV 模块，不依赖 VCS/UVM |
 | `xilinx-suite` | Xilinx(AMD) FPGA/MPSoC 全工具链参考：Vivado XDC 约束、Tcl、综合实现、报告分析、CDC/时序例外（源自 MIT 开源库，按 HK1V11 VU440 场景改编） |
 | `server-pack-overlay` | 服务器回传包（PACK_TAR_*.tar.gz）提取 + 合并式覆盖规则（SYNTHESIS/HDL/DV_TCON_C 三类包口径） |
