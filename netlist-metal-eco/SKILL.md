@@ -1,6 +1,6 @@
 ---
 name: netlist-metal-eco
-description: 网表级金属层 ECO 找可复用门 + 三步金属层改线全流程。当 base 层冻结、只能改 metal/via 重走线（不能新增/resize/move cell）时，判断"能不能做"取决于有没有可重新接线的现存逻辑门。核心方法论是"死锥分析"而非"输出网 0 负载"。触发词：怎么找ECO门、找可复用门、死锥分析、金属层ECO、ECO改线、找spare、spare扫描、&~门、AND2B1、NAND2B1、网表复用门、metal ECO 可行性、RB、SB、Set Bar、Reset Bar、B2、cell 命名、X1 驱动。
+description: 网表级金属层 ECO 找可复用门 + 三步金属层改线全流程。当 base 层冻结、只能改 metal/via 重走线（不能新增/resize/move cell）时，判断"能不能做"取决于有没有可重新接线的现存逻辑门。核心方法论是"死锥分析"而非"输出网 0 负载"。触发词：怎么找ECO门、找可复用门、死锥分析、金属层ECO、ECO改线、找spare、spare扫描、&~门、AND2B1、NAND2B1、网表复用门、metal ECO 可行性、RB、SB、Set Bar、Reset Bar、B2、cell 命名、X1 驱动、跨层级 port、DEF 距离、绕线失败、APR 绕不出来、NOR2 并接取反、AND3 终门、整锥回收、累积 ECO、2M23 案例。
 ---
 
 # netlist-metal-eco — 网表级金属层 ECO：找可复用门 + 三步改线
@@ -55,7 +55,11 @@ description: 网表级金属层 ECO 找可复用门 + 三步金属层改线全�
 
 一个门要能作为 metal-ECO 零件，至少要同时满足：
 
-1. **同模块**：与目标 flop 在**同一模块**（metal 短距重连，避免跨模块长走线/布线风险）。
+1. **物理近距（同模块只是优选，不是铁律）**：驱动目标 flop 复位脚的**终门**必须与目标 flop
+   **物理贴近**——用 **DEF 坐标**验证，"同模块 ≠ 短距"（HV1V22 实证：同模块门仍可能远到绕不出来）。
+   近处实在无门时，**允许跨模块选门并新增 port/wire 送线**（2M23 ECO2 先例：门在 LINK_LOGIC、
+   FF 在 LC_CSPIF_L0，跨层级送复位）。此时**长走线只允许发生在低负载输入支路**，
+   绝不允许是接 `.RB` 的复位输出网（重载 + 关键路径，绕线必挂）。
 2. **输入源信号可达**：要实现的功能的输入（如复位网 `N_RST_NLOCK`、错误标志 `UTC_ERR_CNT_END`）
    在该模块内**现成**（被本模块其它门驱动/出现），不必跨模块拉线。
 3. **带反相输入端**：`AND2B1 / NAND2B1` 的 `B2` 端（或 `AND2B2/NAND2B2`）自带一个反相输入，
@@ -254,6 +258,67 @@ grep -oE "\.RB\(I2C_RSTN\)" main.v | sort | uniq -c                        # 期
    不改负载端会**留下悬空网**（LVS/DRC 直接报错）。最省事又干净的做法是**保留原网名**：`n47`/`n48` 不改名，
    `U72` 的引脚继续指向它们即可；代价只是死锥输出（`LENB_MASK_t`）变成常量，功能无害。
    只有当该网**全网表已无其它负载**时，改名才安全（改前用 grep 逐条数负载）。
+10. **网表改线可行 ≠ APR 绕线可行**——HV1V22 实证：两级串方案网表层完全正确，但反相器门
+    （`PLACE_FE_RC_2_0`）距 9 个目标 FF 太远，复位输出网 `n48` **绕不出来**，方案作废（且工具
+    auto-eq 已移除，无法自动兜底）。选门**必须先解 DEF 拿坐标算距离**；需要取反时优先
+    "**取反输入支路 + AND 族终门**"（2M23 的 NOR2 并接取反 + AND3），不要把反相器串在输出末端。
+11. **跨层级/跨模块同名网、同名实例会撞名**——2M23 有两个不同层级的 `N8`
+    （`RSTN_POFF_CTL.N8`=未延迟 UTC_CNT_END；`LINK_LOGIC.N8`=合并复位，完全不同的两根线）；
+    HV1V22 的 `PLACE_FE_RC_2_0` 在 `LC_CSPIF_L0_0` 是 NAND2X1、在 `CSPI_CMD_ALIGN_L0` 是 AND3B1X1。
+    凡按名字 grep/定位，必须带模块上下文确认；DEF 里实例名是短名，撞名更频繁。
+
+---
+
+## 六、跨项目案例：2M23（HV2M23A1）同型 ECO 与强设定
+
+> 来源：《ECO2_UTC_ERR_rstn_DATA_NUM_CNT_做法總結_20261109》（2026-11-06 做、11-09 整理）。
+> **同一功能**的 ECO（`LC_CSPIF_L0.DATA_NUM_CNT` 异步复位 = `N_RST_NLOCK & ~UTC_CNT_END`，11 个 FF）
+> 在另一颗芯片上的成功实现。提炼版（含 HV1V22 映射）：`E:\project\HV1V22A1\script\eco_r2\2M23_ECO_experience.md`。
+
+### 1. 2M23 实际电路（值得抄的拓扑）
+
+```text
+UTC_CNT_END（RSTN_POFF_CTL 导出，原 U9 OR4 输出 N8，加 port 送出）
+  → U18 NOR2（两输入并接 UTC_CNT_END） = n5 = ~UTC_CNT_END     // 取反在【输入支路】
+  → U15 AND3（.I1(FE_OFN620_N_RST_NLOCK0), .I2(n5), .I3(n5)）  // 多余输入并接
+    = N_RST_NLOCK & ~UTC_CNT_END                                // 终门直接出正确极性
+  →（跨层级：LINK_LOGIC → LC_CSPIF_L0，新增 port/wire）→ 11 个 DATA_NUM_CNT FF 的 .RB
+```
+
+- 门在 `LINK_LOGIC_0`（**不在** FF 所在的 `LC_CSPIF_L0_0`）；门来源 = `BWDAL_rst` 相关**锥回收**
+  （4 个 BWDAL FF / buffer / cell type / 原输出接线全保留，只接受"已确认的锥内部数值改变"）。
+
+### 2. 成败对比（为什么 2M23 成、HV1V22 旧方案败）
+
+| | 2M23（成功） | HV1V22 旧方案（APR 绕线失败作废） |
+|---|---|---|
+| 取反位置 | **输入支路**（NOR2 并接取反 UTC_CNT_END） | **输出末端**（NAND2 并接反相 n47） |
+| 终门极性 | AND3 直接出 `A & ~B` | NAND2B1 出 `~(A & ~B)` 须再反相 |
+| 复位输出网驱动门 | AND3（可贴近 FF 摆） | 反相器（死锥残骸位置固定、距 FF 远）→ **n48 绕不出来** |
+| 门所在模块 | LINK_LOGIC（跨层级 + 新增 port/wire） | 与 FF 同模块（但物理远） |
+| APR 评估 | 网表阶段明确不评（后端兜底） | 后端实测失败 → **必须加 DEF 距离闸门** |
+
+核心教训：**接 `.RB` 的复位输出网，其驱动门必须物理贴近目标 FF**；要取反就取反在输入支路。
+门数/深度两家相同（2 门 2 级），差的不是逻辑是**位置**。
+
+### 3. 强设定 11 条（2M23 实测执行，可直接抄作业）
+
+1. 不新增/不删除 cell、不换 cell type；只允许既有 cell **pin reconnect**。
+2. **跨层级 module port/wire 允许为接线新增**（重要自由度，别自我设限"同模块"）。
+3. **累积原则**：以最新已确认的累积 ECO 网表为输入；不回退旧版、**不覆盖旧输出文件**
+   （前一版若被 APR 否决 → 新方案从原始基线重做、落新文件名）。
+4. 只改指定 register；其他 register/层级不得意外变动。
+5. **RTL 先行**：先在 RTL 定义完整可验证目标，再追到 gate；跨层级数据流全链路追完。
+6. 回收判据：完整层级连线 + 下游用途 + functional/scan/test/probe 模式需求；
+   **不能只因单一输出未接就认定整颗 cell 可回收**。
+7. **名称不可信**（同名不同网/同名不同 cell），按全路径 + 模块上下文定位。
+8. 变更数稽核：module 数 / leaf instance 数 / cell type 前后一致；pin 变更逐个数清
+   （2M23：input pin 变更 16 处 = U18/U15 共 5 + FF `.RB` 11；新增跨层级 port 连接 2 处）。
+9. 验证组合拳：instance/type audit + pin diff + 全层级 driver/load + top elaboration +
+   **focused LEC**（2M23：16 等价点全 PASS，Yosys）+ RTL/gate 功能仿真（64 配置 94,886 次比较 PASS）。
+10. 范围诚实披露：focused LEC ≠ full-chip LEC / 商用签核；APR/STA/DRC/LVS/SI/DFT/power 不在网表 ECO 内完成。
+11. 交付：final netlist + ECO 变更片段（**从 final netlist 抽真实内容**、每变更点约 5 行上下文、
+    **不造假 wrapper**）+ 变更摘要表 + report/log + **SHA-256**。
 
 ---
 
@@ -274,3 +339,7 @@ grep -oE "\.RB\(I2C_RSTN\)" main.v | sort | uniq -c                        # 期
   `n48 = ~n47 = N_RST_NLOCK & ~UTC_ERR_CNT_END`；9 个 DFF `.RB` 由 `FE_OFN59_N_RST_NLOCK0` 改接 `n48`。
   **保留网名 n47/n48 不改**（`U72` 仍读两者，避免悬空）。结构自检实证：`n47` 1驱动/3负载、`n48` 1驱动/10负载（9×`.RB`+`U72.I4`）、
   `.RB(n48)`=9、`LENB_MASK_t` 1驱动/0负载、`FE_OFN59_N_RST_NLOCK0` 的 `.RB` 由 41 降为 32。
+- **后续（2026-11-10，方案作废重找）**：上述两级串方案 **APR 绕线失败**——`PLACE_FE_RC_2_0`/`n48`
+  距 9 个 FF 太远，复位输出网绕不出来（且工具 auto-eq 已移除，无法自动兜底）。
+  网表改线本身合法 ≠ 绕线可行，教训固化见「五、坑10」；替代拓扑参考「六、2M23 案例」
+  （取反放输入支路 + AND 族终门贴近 FF，允许跨层级 port/wire；候选门必须过 DEF 距离闸门）。
