@@ -266,6 +266,12 @@ grep -oE "\.RB\(I2C_RSTN\)" main.v | sort | uniq -c                        # 期
     （`RSTN_POFF_CTL.N8`=未延迟 UTC_CNT_END；`LINK_LOGIC.N8`=合并复位，完全不同的两根线）；
     HV1V22 的 `PLACE_FE_RC_2_0` 在 `LC_CSPIF_L0_0` 是 NAND2X1、在 `CSPI_CMD_ALIGN_L0` 是 AND3B1X1。
     凡按名字 grep/定位，必须带模块上下文确认；DEF 里实例名是短名，撞名更频繁。
+12. **判死必须用「平坦化达顶层」金标准（FTT）**——从候选门输出网做前向 BFS 穿过全部层级到顶层，
+    只要到达**顶层输出 port / 活 DFF 输入 / ICG `.EN`** 任何一处即活。0 载 / 1 载启发式已被
+    3 例真实误判证伪（HV1V22 R2 轮）：U102（FYSAL→三级缓冲→顶层 CLKA_L，被当 cons=1 死门）、
+    U290（tbk_flag→LENB_L/LENB_R）、U434（→顶层总线 reg_cr_done_cnt[3]，"0 载"实为输出口特性）。
+    根因：**端口逃逸未计为消费者 / 遍历停在模块边界**。另：复用死反相器前先查它当前携带的信号——
+    改接输入虽合法，但要确认原输入网失去末位负载后不悬空、且新输入的走线距离可接受。
 
 ---
 
