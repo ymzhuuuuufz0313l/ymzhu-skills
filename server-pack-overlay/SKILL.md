@@ -8,19 +8,42 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 > 从服务器搬回本机的三类包（SYNTHESIS / RTL-HDL / DV_TCON_C）处理手册。沉淀自 0921V3/V4/V5、0920 系列与 2026-09-23 规则修订、2026-11-05 diff-first 修订（1105 事故：1028 包 BIT_SWAP 补丁漏采 → KCODE 找不到）。
 > **核心原则：合并式覆盖——同名文件覆盖、新增文件添加、本地独有文件保留；禁止暴力文件夹整替**（本地可能有只在本机用的脚本，整替会误删）。
 > **diff-first（2026-11-05 起强制）：覆盖哪些文件由人拍板，agent 只跑脚本、报全集、执行批准清单，不得自行取舍。**
+> **覆盖后必过 overlay 校验（2026-11-16 起）：`pack_diff.py --apply` 只保证"没多覆盖"，不保证"没漏提交"。提交前后各跑一次 `script/gates/overlay_check.py`，A/D/R 一律 FAIL，详见 §0B。**
+> **交付级 = L0/L1（见 hk1v11-delivery-gate）：包 overlay 不跑 L2 对抗评审、不跑 L3 信号追踪，也不生成 REVIEW.md；但签名 + CHANGES + 提交且推送三条不可省。**
 
 ## 0A. diff-first 强制流程（v2，2026-11-05 起取代"agent 自行选文件"）
 
 1. **回传包落地后第一动作**：跑 `python ~/.dsh/skills/server-pack-overlay/pack_diff.py <pack.tar.gz> --out <report.md>`
-   （脚本随 skill 分发、进 ymzhu-skills 仓库；HK1V11 项目内 `script/pack_diff.py` 为同步副本，改 skill 版后同步过去）
+   （脚本随 skill 分发、进 ymzhu-skills 仓库，**skill 版为准**；HK1V11 项目内 `script/pack_diff.py` 为同步副本，改 skill 版后必须覆盖过去。2026-11-16 核对：项目副本落后于 skill 版，缺 `--root` 参数——比对其它项目（如 HV1V22A1）前先用 skill 版，或先把 skill 版同步进项目）
    - **DV_TCON_C / HDL(RTL) / SYNTHESIS 三类包通用**（自动识别 `../../../project/.../<AREA>/` 与顶层 `<AREA>/` 两种布局）；他人区布局用 `--map VERIFICATION=DV_TCON_C` 映射；只比对部分区用 `--areas HDL,SYNTHESIS`；>4MB 大文件自动 md5-only（SYNTHESIS 大 rpt 保护）；local 侧用 `git ls-files` 枚举（天然排除 gitignore 解压产物噪音）
    - 全量 md5 比对（不依赖 mtime、不抽样、不排除目录），产出五桶全集：`identical / eol_only / diff / pack_only / local_only`
    - 每个 diff 附：包/本地大小、本地 git 最后提交、首 hunk 摘要、建议标签（`LOG-JUNK`/`PRISTINE`/`IPCONS`/`REGGEN`——**仅提示，无约束力**）
 2. **反馈**：把报告完整交给用户（diff 桶逐文件、其余桶可汇总计数+清单）。**不做任何"这个该覆盖/那个不该"的替用户决定**——历史教训：1028 overlay 的 changed-list 不完整，isptx_driver.sv 的 BIT_SWAP 分支与 boe_test/user_def.sv 的 `define BIT_SWAP` 双双漏采，本地一直缺补丁，直接引发 KCODE 找不到排查。
 3. **拍板**：用户逐文件/逐类批准 → 批准路径写入 `approved.txt`（含 `REGGEN` 类时提醒"覆盖生成物 ≠ 重新生成，寄存器类 env_cfg 建议走 update_env_cfg.py 重生成"即可，仍由用户定）。
 4. **执行**：`python pack_diff.py <pack.tar.gz> --apply approved.txt` → 机械覆盖、仅覆盖批准项，产出 `<approved>.applied.txt` 落地清单。
-5. **记录**：applied 清单进 `修改记录/CHANGES.md` + 中间版本说明；RTL 三关仍不适用于包覆盖。
+5. **记录**：applied 清单进 `修改记录/CHANGES.md` + 中间版本说明，条目里写明交付级 `L0/L1`；RTL 三关仍不适用于包覆盖。
 6. 大包（数百 MB）跑 pack_diff 用后台任务执行，避免前台超时中断。
+
+## 0B. 覆盖后的 overlay 校验与提交自检（2026-11-16 起强制）
+
+**为什么要有这一节**：`pack_diff.py --apply` 保证的是"没多覆盖"（批准清单之外一个字节不动），它**不保证"没漏提交"**。1113 三轮包（V1/V2/V3）覆盖后手工 `git add` 只加了部分路径，`TOP/HK1V11_digital_top.v` 等漏加，commit 里少文件、push 之后服务器拿到的还是旧版——排查了半天才发现是本地漏提交，不是推送失败。
+
+1. **覆盖前打 baseline**（工作树必须干净）：
+   ```bash
+   python script/gates/overlay_check.py pre --package SYNTHESIS   # 或 HDL / DV_TCON_C
+   ```
+   写出 `script/gates/overlay_baseline.json`（commit + 范围 + 文件树快照）。
+2. **覆盖后复核**：`--paths` 给实际覆盖的目录/文件
+   ```bash
+   python script/gates/overlay_check.py post --package SYNTHESIS --paths SYNTHESIS/
+   ```
+   校验口径：
+   - 与 baseline 比对，**A/D/R（新增 / 删除 / 改名）一律 FAIL** —— 回传包只允许"改内容"，新增文件必须来自用户明确批准的 `pack_only` 桶，删除/改名一律视为异常，先问人；
+   - 未跟踪杂散文件告警（多半是解压残留）；
+   - 跑 `script/gates/probes.json` 里的**版本代际探针**（如 `LONG_ENCODING_ALIGN.v` 的 `I_INDATA_D4==0`、`SHORT_ENCODING_ALIGN.v` 的 `_TYP1_M>0`），确认真拿到了新代数值而不是旧文件原地未动；
+   - 打印建议命令 **`git add -A -- <paths>`** —— 用 `-A` + 显式路径，不要 `git add <file1> <file2>` 手敲（漏加就是这么来的，见 server-pack-overlay 1113 事故）。
+3. **提交后自检**（overlay_check 内置）：带 `--commit` 时它会 `git log --stat` 复核提交里的文件数与预期一致；不一致就是漏加，`git commit --amend` 补。
+4. 解压产物目录（`script\_syn_*` / `_rtl_*` / `_dv_*`）靠 `.gitignore` 排除；若 overlay_check 把解压目录报成未跟踪杂散，说明 gitignore 漏了，补一行而不是 `git add` 进去。
 
 ## 0. 包定位与目录映射
 
@@ -39,7 +62,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 - 包内路径带 `../../../` 前缀、含 `::` 等非法字符、超长路径 → **Windows tar 解不了，用 python tarfile 剥离 `../` 解出**。
 - 无法解析的 symlink（指向包外/他人目录）跳过并记录，不强解。
-- 包内结构形如 `XXW_PRJ01/HK1V11/designer/<组>/<人>/HK1V11/...`，编号与内容的对应以包内实际路径自证。
+- 包内结构形如 `XXW_PRJ01/HK1V11/designer/<组>/<人>/HK1V11/...`（编号↔内容的判定见 §0 第 2 条）。
 
 ## 2. SYNTHESIS 包
 
@@ -47,7 +70,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 | 对象 | 动作 |
 |---|---|
-| `top/sta/` 各 corner `latest/` 报告（log/rpt/summary/run_summary）、`sdc_pr/`、rpt/sdc 类产物 | **覆盖**（服务器 run 产物同步的正主；可先评估再覆盖，一般不必问） |
+| `top/sta/` 各 corner `latest/` 报告（log/rpt/summary/run_summary）、`sdc_pr/`、rpt/sdc 类产物 | **覆盖**（服务器 run 产物同步的正主）；仍须进 `approved.txt`，走 diff-first 拍板，不得自行批量覆盖 |
 | 服务器改过的脚本（pt_setup.tcl / read_design.tcl / run_pt / design.set / deploy 脚本） | **先 diff，有差异才覆盖**，并记录差异内容 |
 | `SYNTHESIS\common\ip_cons\<top>.tcl` | **先 diff 约束差异，逐条评估同不同意——同意的采纳（覆盖/合并进本地），不同意的保留本地并写明理由**。同时判定服务器 run 吃到的约束版本（找本代标记：`cpuwr_reg_grp`、10 分区排除清单、`-to RX_CLK` 的 UTC 行、`U_DPLC_DATA_GEN/*/D*`），用于解读这批报表 |
 | `common\clk_period.tcl` | **不动**（要求 pristine），有变化只汇报 |
@@ -58,12 +81,12 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 3. `report_exceptions.rpt` 关键 applied 行（如 `* RX_CLK cycles=2(start)`）在不在
 4. 违例 startpoint 分布：近期排除/注释的分区**回单周期后冒不冒新违例**（收窄/注释修改后最关心的一笔）
 
-覆盖后 git：只 `git add SYNTHESIS`（解压目录靠 gitignore），commit 注明"<ver> 服务器 run 产物同步"，push。**推送策略（1116 实战修订，取代旧的 http.version/postBuffer 单条重试）**：
+覆盖后 git：先按 §0B 跑 `overlay_check.py post`，再 `git add -A -- SYNTHESIS/`（显式路径 + `-A`；解压目录靠 gitignore），commit 注明"<ver> 服务器 run 产物同步（L1）"，提交后用 `git log --stat` 复核文件数，push。**推送策略（1116 实战修订，取代旧的 http.version/postBuffer 单条重试）**：
 
 - **GB 级大包禁止单次全量 push**——必被代理/TUN 掐断（`send-pack: unexpected disconnect while reading sideband packet` / `broken pipe`）。按目录分拆多笔 commit（如逐 corner 的 latest/log/rpt），逐笔推；单笔仍断就逐 commit 增量推：`git push origin <sha>:refs/heads/main`（oldest 先）。
 - **断连是间歇性的**：写带重试的循环（每 15~20s 一次，`git rev-list --count origin/main..main` 判停），网络恢复窗口一次能推齐多笔；commit 先落本地永远安全，等窗口即可，不要反复杀进程重来。
 - **双通道互备（2026-11-16 起）**：默认 HTTPS + gh 凭据免密（`gh auth setup-git` 已接管）；被掐时切 ssh 443：`git remote set-url --push origin ssh://git@ssh.github.com:443/<owner>/<repo>.git`，fetch 仍走 HTTPS 互不影响。
-- **坑：全局 `http.proxy=127.0.0.1:7890` 残留**——TUN 模式下 7890 常无监听，HTTPS 全部撞死本地死端口且报错像"网络不通"。TUN 模式直接 `git config --global --unset http.proxy`；换回端口代理模式时再加回。
+- **坑：代理配置与实际监听端口脱节**——2026-11-16 实测本机系统代理是 `127.0.0.1:12450`（旧的 7890 记录已作废），而 `git`/`gh` **都是 Go/自管 HTTP 客户端，不读 Windows 的 IE 代理设置**，只认 `HTTPS_PROXY` / `HTTP_PROXY` 环境变量。症状是"浏览器能开 github、git 却超时"，报错像网络不通。排查顺序：`curl -x http://127.0.0.1:<port> https://github.com` 先验代理活 → 再确认环境变量。TUN/系统代理模式下没有可用的 HTTP 代理端口时，直接 `git config --global --unset http.proxy`。
 - 旧招留档：`git config http.version HTTP/1.1` + `http.postBuffer 524288000`（HTTP/2 层面问题时用）。
 - **超大目录不入库先例**：whole_session（PT 会话存档，单 corner 数百 MB）按用户指令 gitignore 永不推；历史 run 产物（log_/rpt_）逐笔推。
 
@@ -73,7 +96,8 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 - 覆盖是**同步动作，不做 check/评审**——只记录覆盖/新增/保留了哪些文件，写进 `README_中间版本说明.md`（快照来源 + diff 摘要 + 文件清单），文末签名。
 - **寄存器相关模块特别 diff（2026-11-06 ymzhu 要求）**：HDL 包内 LC_CPUWR / LC_REG_MAPPING / LC_REG* / R_REG* 体系等寄存器相关文件必须从普通 diff 清单中**单列呈报**（完整差异，不并入汇总）；批准覆盖后按 version-archive 规则维护 `LC_CPUWR_history/`（固定文件名+文件头版本号、目录内 CHANGES.md 与根级修改记录双轨、README 版本速查表），并登记 `back3.HK1V11_changelist.xlsx` Register Change 表。
-- RTL 三关（iverilog / rtl-code-review / rtl-signal-trace）**不适用**于包覆盖：那是"本地自行修改 RTL 功能并发布新版本"时才走的流程；服务器回传包是权威交付物的搬运。
+- RTL 三关（iverilog / rtl-code-review / rtl-signal-trace）**不适用**于包覆盖：那是"本地自行修改 RTL 功能并发布新版本"时才走的流程；服务器回传包是权威交付物的搬运，交付级记 **L1**（签名 + CHANGES + 提交推送）。
+- 同一次交付里既有包覆盖、又有本地改 RTL 功能时，那一轮按**更高**的级走（改功能 → L2，涉及时序/编码变更 → L3），不要用"包里带来的"当豁免理由。
 
 ## 4. DV_TCON_C 包
 
@@ -85,7 +109,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 ## 5. 通用纪律
 
 - 所有说明类 md 文末签名 `<!-- ymzhu YYYY-MM-DD HH:MM -->`（实际时间）。
-- **汇报模板**：① 各包解压到哪、覆盖/新增/保留文件数；② SYNTHESIS 验证数字（SEL-004 / D1D2 / exceptions 关键行 / setup+hold 总账）；③ 服务器约束版本判定（吃到哪一代修复）；④ RTL/DV 合并摘要（覆盖/新增/保留各多少）；⑤ commit hash 与 push 结果。
+- **汇报模板**：① 各包解压到哪、覆盖/新增/保留文件数；② SYNTHESIS 验证数字（SEL-004 / D1D2 / exceptions 关键行 / setup+hold 总账）；③ 服务器约束版本判定（吃到哪一代修复）；④ RTL/DV 合并摘要（覆盖/新增/保留各多少）；⑤ **overlay 校验结论（A/D/R 是否 0、代际探针是否命中新值）+ 交付级 L0/L1**；⑥ commit hash、`git log --stat` 文件数自检结果与 push 结果。
 - 时间线意识：服务器 run 的时间戳可能**早于本地最新约束修改**——汇报时明确"服务器吃到了哪一代，哪些没吃到"。
 
 ## 6. 服务器 EDA 工具启动（dsh-ssh 插件执行，2026-09-30 dc_shell 实测，2026-10-22 修订）
