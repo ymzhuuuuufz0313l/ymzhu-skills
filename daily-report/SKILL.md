@@ -40,6 +40,7 @@ When the user asks to record today's work into the daily record system (e.g., "�
    - If any step fails, report the failure to the user but do not block the rest of the daily-record workflow.
 7. **Sync weekly record**: Check and update `E:\每日记录\<project>\每周记录.md`. Ensure the current daily record is referenced.
 8. **Update legacy issues**: Check `E:\每日记录\<project>\遗留问题.md`. Only record cross-day or tracking-required issues. Close resolved items with 🔵 and a close date.
+   - **遗留问题上 GitHub Issues（2026-11-16 起强制：先确认后上票）**：把遗留问题搬进仓库 issue tracker 前，必须先把未关闭条目整理成编号清单**逐组向用户确认，用户点头的才建票**——agent 不得自行批量上票。仅适用于已配 issue tracker 的仓库（存在 `docs/agents/issue-tracker.md`）；建票用该文件记录的工具与约定（GitHub 用 gh，或 dsh-mattpocock-skills-deck 的 deck_issue_create），标签遵循仓库 `docs/agents/triage-labels.md` 的五角色词汇（待拍板/待产品决策 → `needs-triage` 或 `needs-info`；规格完整可执行 → `ready-for-agent`/`ready-for-human`），**不额外强制其他标签**。建票后在遗留问题.md 对应行的状态列回写票号（如 `⏳ 待拍板 #12`），票关闭时同步改 🔵 + 日期。
 9. **Report to user**: List files written/updated, synced contents, and any remaining legacy issues.
 
 ## 日期处理规则（必须遵守）
