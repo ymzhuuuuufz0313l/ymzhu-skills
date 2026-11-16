@@ -21,6 +21,12 @@ description: >-
 
 读取 reference 之前，先把本 `SKILL.md` 所在目录解析为 `SKILL_ROOT`（Kimi Code / Claude Code 中使用 skill 加载信息给出的绝对路径；Claude Code 可用 `${CLAUDE_SKILL_DIR}`）。下文所有 `$SKILL_ROOT/...` 均为相对本目录的路径。
 
+## 闸门衔接（项目存在 `script/gates/` 时强制）
+
+- 追踪结论落盘 `script/gates/reports/<UTC时间戳>_trace.json`，至少含 `{"kind":"trace","status":"pass|fail","workflows":["A","B","C"],"findings":[...],"generated_at":"..."}`。
+- L3（重定时/打拍）变更**必须**跑 Workflow C（成对消费相对拍差审计），否则 `preflight --level L3` 判红。
+- 只输出对话文字、不落 JSON = 闸门视为未做。
+
 ## Workflow A：信号路径追踪（source → sink）
 
 1. **定位 source**：Grep 信号声明（`wire`/`reg`/`logic`/`output`）与首次赋值点。
