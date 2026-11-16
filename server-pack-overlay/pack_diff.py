@@ -224,15 +224,19 @@ def do_apply(pack, approved):
     print(f'[apply] 落地清单已写入 {rec}（供 CHANGES 记录）')
 
 def main():
-    global AREA_MAP
+    global AREA_MAP, LOCAL_ROOT
     ap = argparse.ArgumentParser(description='HK1V11 服务器回传包全量 diff 与批准覆盖（DV_TCON_C/HDL/SYNTHESIS 通用）')
     ap.add_argument('pack', help='PACK_TAR_*.tar.gz 路径')
+    ap.add_argument('--root', help='本地项目根（缺省 E:/project/HK1V11；其它项目如 HV1V22A1 必须显式指定）')
     ap.add_argument('--out', help='报告输出路径（缺省 <pack>_diff_report.md）')
     ap.add_argument('--apply', dest='approved', help='approved.txt：每行一个要覆盖的 <AREA>/<rel> 路径')
     ap.add_argument('--map', action='append', default=[], metavar='FROM=TO',
                     help='区名映射，可多次；如 --map VERIFICATION=DV_TCON_C')
     ap.add_argument('--areas', help='只比对这些区（逗号分隔），如 --areas HDL,SYNTHESIS')
     a = ap.parse_args()
+    if a.root:
+        LOCAL_ROOT = os.path.abspath(a.root).replace('\\', '/')
+        print(f'[root] 本地项目根 = {LOCAL_ROOT}')
     for m in a.map:
         f, _, t = m.partition('=')
         if f and t:

@@ -58,7 +58,14 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 3. `report_exceptions.rpt` 关键 applied 行（如 `* RX_CLK cycles=2(start)`）在不在
 4. 违例 startpoint 分布：近期排除/注释的分区**回单周期后冒不冒新违例**（收窄/注释修改后最关心的一笔）
 
-覆盖后 git：只 `git add SYNTHESIS`（解压目录靠 gitignore），commit 注明"<ver> 服务器 run 产物同步"，push（失败先 `git config http.version HTTP/1.1` + `git config http.postBuffer 524288000` 再重试）。
+覆盖后 git：只 `git add SYNTHESIS`（解压目录靠 gitignore），commit 注明"<ver> 服务器 run 产物同步"，push。**推送策略（1116 实战修订，取代旧的 http.version/postBuffer 单条重试）**：
+
+- **GB 级大包禁止单次全量 push**——必被代理/TUN 掐断（`send-pack: unexpected disconnect while reading sideband packet` / `broken pipe`）。按目录分拆多笔 commit（如逐 corner 的 latest/log/rpt），逐笔推；单笔仍断就逐 commit 增量推：`git push origin <sha>:refs/heads/main`（oldest 先）。
+- **断连是间歇性的**：写带重试的循环（每 15~20s 一次，`git rev-list --count origin/main..main` 判停），网络恢复窗口一次能推齐多笔；commit 先落本地永远安全，等窗口即可，不要反复杀进程重来。
+- **双通道互备（2026-11-16 起）**：默认 HTTPS + gh 凭据免密（`gh auth setup-git` 已接管）；被掐时切 ssh 443：`git remote set-url --push origin ssh://git@ssh.github.com:443/<owner>/<repo>.git`，fetch 仍走 HTTPS 互不影响。
+- **坑：全局 `http.proxy=127.0.0.1:7890` 残留**——TUN 模式下 7890 常无监听，HTTPS 全部撞死本地死端口且报错像"网络不通"。TUN 模式直接 `git config --global --unset http.proxy`；换回端口代理模式时再加回。
+- 旧招留档：`git config http.version HTTP/1.1` + `http.postBuffer 524288000`（HTTP/2 层面问题时用）。
+- **超大目录不入库先例**：whole_session（PT 会话存档，单 corner 数百 MB）按用户指令 gitignore 永不推；历史 run 产物（log_/rpt_）逐笔推。
 
 ## 3. RTL（HDL）包
 
