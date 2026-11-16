@@ -38,7 +38,11 @@ description: >-
 2. **加载维度定义**：读取 `$SKILL_ROOT/references/rtl_review_dimensions.md`，按其中的检查项执行。
 3. **按维度逐项审查**，每个问题标注 severity：`[CRITICAL]` / `[HIGH]` / `[MEDIUM]` / `[LOW]`，并给出文件:行号 与修复方向。
 4. **pass 判定**：`pass = (critical == 0 && high <= 1)`。
-5. **输出报告**：格式见下文。默认直接回复用户；用户要求时再落盘。
+5. **输出报告**：格式见下文。默认直接回复用户。
+6. **闸门衔接（项目存在 `script/gates/` 时强制）**：
+   - 评审前先跑 `python script/gates/preflight.py --level L2`（或 L3）；preflight 未通过不进入评审（语法/签名/CHANGES 先修）。
+   - 评审结论必须落盘为机器可读 JSON：`script/gates/reports/<UTC时间戳>_review.json`，至少含 `{"kind":"review","critical":N,"high":N,"medium":N,"low":N,"pass":bool,"files":[...],"generated_at":"..."}`。preflight 的 L2/L3 关卡读它判定 `critical==0 && high<=1`。
+   - 只写了散文报告、没落 JSON = 未通过闸门（口头 pass 无效）。
 
 ## 评审维度
 
@@ -76,6 +80,8 @@ description: >-
 ```
 
 ## 硬性规则
+
+- **结论必须可机读**：散文报告给人看，JSON 给闸门看；两者内容必须一致（不允许 JSON 写 pass 而报告列 CRITICAL）。
 
 - **只评审、只报告**。修复动作经用户确认后再执行，不在评审过程中顺手改代码。
 - **不跑项目 case 仿真**。时序/功能判断基于静态代码分析，报告中必须注明这一点。**例外**：重定时/移 tap 类变更（触发"重定时消费者审计"维度时）要求编写最小对拍 TB——新旧 RTL 同激励差分比较关键事件序列（检测/装载/find）——此类 TB 是评审证据的一部分，允许且推荐执行，不属于 case 仿真。
