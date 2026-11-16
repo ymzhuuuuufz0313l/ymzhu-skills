@@ -40,10 +40,13 @@ When the user asks to record today's work into the daily record system (e.g., "�
    - If any step fails, report the failure to the user but do not block the rest of the daily-record workflow.
 7. **Sync weekly record**: Check and update `E:\每日记录\<project>\每周记录.md`. Ensure the current daily record is referenced.
 8. **Update legacy issues**: Check `E:\每日记录\<project>\遗留问题.md`. Only record cross-day or tracking-required issues. Close resolved items with 🔵 and a close date.
-   - **遗留问题上 GitHub Issues（2026-11-16 起强制：先确认后上票，拍板结论随票走）**：把遗留问题搬进仓库 issue tracker 前，必须先把未关闭条目整理成**编号分组清单**（如 Q 组产品拍板 / T 组技术待办）逐组向用户确认，**用户点头的才建票**——agent 不得自行批量上票。仅适用于已配 issue tracker 的仓库（存在 `docs/agents/issue-tracker.md`）。
-   - **建票方式**：用该文件记录的工具与约定（GitHub 用 gh，或 dsh-mattpocock-skills-deck 的 deck_issue_create）；标签遵循仓库 `docs/agents/triage-labels.md` 五角色词汇（待拍板/待产品决策 → `needs-triage` 或 `needs-info`；规格完整可执行 → `ready-for-agent`/`ready-for-human`），**不额外强制其他标签**。
+   - **遗留问题上 GitHub Issues（2026-11-16 定稿，含 grill 审查修订）**：
+   - **适用范围**：仅限已配 issue tracker 的仓库（存在 `docs/agents/issue-tracker.md`）。未配 tracker 的项目（刻意，非遗漏）遗留问题留在 markdown 作唯一事实源，不上票；要上先跑该仓库的 setup 配 tracker。
+   - **上票前两步**：① 把未关闭条目整理成**编号分组清单**（如 Q 组产品拍板 / T 组技术待办）逐组向用户确认，**点头的才建**，agent 不得自行批量上票；② **建票前强制查重**（`deck_issue_list` / `gh issue list` 按关键词搜同主题 open 票）——命中 open 旧票只回写旧票号、不新建。
+   - **建票**：用仓库 `docs/agents/issue-tracker.md` 记录的工具与约定；标签遵循 `docs/agents/triage-labels.md` 五角色，判据：**等外部/报告者补输入 → `needs-info`；等维护者自己评估决策 → `needs-triage`；规格完整可执行 → `ready-for-agent`/`ready-for-human`**，不额外强制其他标签。新票与已有票存在结论依赖时**显式挂 blockedBy 边**（如 Q2–Q6 各票 blocked-by 已拍板的 Q1 票）。
    - **票内容模板（#1 实战验证）**：标题 =「编号 + 主题 + 拍板结论（如有）」；正文五段 = 目的（注明来源=遗留问题.md 哪条）→ 拍板结论（含口授人/时间；无结论则写待拍板问题）→ 背景 → 待办 checklist（含"与现行方案一致性核对"项）→ 维护者原话。**用户口授的拍板原话一字不动录进维护者原话区**（deck 用 originalWords，gh 手动建也照此格式）。
-   - **建后三连**：① 遗留问题.md 对应行状态列回写（拍板场景写 `✅ 已拍板（日期）：结论；跟踪票 #N`，纯待办场景写 `⏳ 原 状态 #N`）；② deck_issue_report 上报（用 deck 建的票必报）；③ 票关闭时同步改 🔵 + 日期。
+   - **建后三连**：① 遗留问题.md 回写**两处一起改**——对应行状态列（拍板场景 `✅ 已拍板（日期）：结论；跟踪票 #N`，纯待办场景 `⏳ 原 状态 #N`）**＋文件末尾统计表**同步增减；② deck_issue_report 上报（用 deck 建的票必报）；③ 票关闭时同步改 🔵 + 日期。
+   - **对账（回流）**：每次执行本第 8 步时顺手拉一次该项目 open 票清单（`deck_issue_list` / `gh issue list`）；md 中带 #N 的行若对应票已关闭，当场改 🔵 + 关闭日期——防止票在网页侧被手动关闭后 md 永停 `⏳ #N`。
 9. **Report to user**: List files written/updated, synced contents, and any remaining legacy issues.
 
 ## 日期处理规则（必须遵守）
