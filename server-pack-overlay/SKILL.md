@@ -5,7 +5,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 # 服务器回传包提取与合并式覆盖规则
 
-> 从服务器搬回本机的三类包（SYNTHESIS / RTL-HDL / DV_TCON_C）处理手册。沉淀自 0921V3/V4/V5、0920 系列与 2026-09-23 规则修订、2026-11-05 diff-first 修订（1105 事故：1028 包 BIT_SWAP 补丁漏采 → KCODE 找不到）。
+> 从服务器搬回本机的三类包（SYNTHESIS / RTL-HDL / DV_TCON_C）处理手册。沉淀自 0921V3/V4/V5、0920 系列与 2026-09-23 规则修订、2026-11-05 diff-first 修订（1105 事故：1028 包 BIT_SWAP 补丁漏采 → KCODE 找不到）、2026-11-17 whole_session 硬规则（永不覆盖永不入库）与 Downloads 预解压形态说明。
 > **核心原则：合并式覆盖——同名文件覆盖、新增文件添加、本地独有文件保留；禁止暴力文件夹整替**（本地可能有只在本机用的脚本，整替会误删）。
 > **diff-first（2026-11-05 起强制）：覆盖哪些文件由人拍板，agent 只跑脚本、报全集、执行批准清单，不得自行取舍。**
 > **覆盖后必过 overlay 校验（2026-11-16 起）：`pack_diff.py --apply` 只保证"没多覆盖"，不保证"没漏提交"。提交前后各跑一次 `script/gates/overlay_check.py`，A/D/R 一律 FAIL，详见 §0B。**
@@ -14,7 +14,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 ## 0A. diff-first 强制流程（v2，2026-11-05 起取代"agent 自行选文件"）
 
 1. **回传包落地后第一动作**：跑 `python ~/.dsh/skills/server-pack-overlay/pack_diff.py <pack.tar.gz> --out <report.md>`
-   （脚本随 skill 分发、进 ymzhu-skills 仓库，**skill 版为准**；HK1V11 项目内 `script/pack_diff.py` 为同步副本，改 skill 版后必须覆盖过去。2026-11-16 核对：项目副本落后于 skill 版，缺 `--root` 参数——比对其它项目（如 HV1V22A1）前先用 skill 版，或先把 skill 版同步进项目）
+   （脚本随 skill 分发、进 ymzhu-skills 仓库，**skill 版为准**；HK1V11 项目内 `script/pack_diff.py` 为同步副本，改 skill 版后必须覆盖过去。2026-11-17 核对并同步：HK1V11 项目副本已与 skill 正本一致（补齐 `--root` 参数）；比对其它项目（如 HV1V22A1）前仍先核对版本，落后即用 skill 正本覆盖过去）
    - **DV_TCON_C / HDL(RTL) / SYNTHESIS 三类包通用**（自动识别 `../../../project/.../<AREA>/` 与顶层 `<AREA>/` 两种布局）；他人区布局用 `--map VERIFICATION=DV_TCON_C` 映射；只比对部分区用 `--areas HDL,SYNTHESIS`；>4MB 大文件自动 md5-only（SYNTHESIS 大 rpt 保护）；local 侧用 `git ls-files` 枚举（天然排除 gitignore 解压产物噪音）
    - 全量 md5 比对（不依赖 mtime、不抽样、不排除目录），产出五桶全集：`identical / eol_only / diff / pack_only / local_only`
    - 每个 diff 附：包/本地大小、本地 git 最后提交、首 hunk 摘要、建议标签（`LOG-JUNK`/`PRISTINE`/`IPCONS`/`REGGEN`——**仅提示，无约束力**）
@@ -50,6 +50,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 1. **远端操作默认禁用（2026-11-06 ymzhu 指令，取代旧"agent 自己拉取"规则）**：回传包一律由**用户手动下载**到 `C:\Users\zhuyanming\Downloads\`（包源通常是内网工作站，与 IC_EDA VM 无关），agent 从 Downloads 起步。未经用户**当次会话明确授权**，agent 不得对任何 ssh 远端主机（IC_EDA VM、内网工作站或其他一切主机）执行 ssh_exec / ssh_upload / ssh_download / ssh_tunnel / ssh_cluster 操作——包括 ls 探查等"只读"命令一律禁止（2026-11-06 教训：agent 依据旧规则自行 ssh 探查 VM 被叫停；回传源头是内网工作站，与 VM 无关）。
    - 仅当用户在当前对话明确点名某主机并说"去上面××"时才可动用对应 ssh 工具，且该授权**不延续**到后续轮次/后续会话。
    - 包已在 Downloads（用户已下载）则直接进解压/比对。
+   - Downloads 下可能并存用户**已预解压**的 `PACK_TAR_*` 目录与 `PACK_TAR_*.tar.gz` 原包：**pack_diff 一律以 tar.gz 原包为比对/覆盖源**，预解压目录仅作人读对照，不作为 diff 或覆盖输入。
 2. **编号与内容的对应以包内实际路径自证**（解开后看包内是 `SYNTHESIS/`、`HDL/` 还是 `DV_TCON_C/`），不要凭编号顺序猜。
 3. 解压目标（历史惯例命名，放 `E:\project\HK1V11\script\` 下）：
    - SYNTHESIS → `script\_syn_<ver>\`（如 `_syn_0924v2`）
@@ -75,6 +76,12 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 | `SYNTHESIS\common\ip_cons\<top>.tcl` | **先 diff 约束差异，逐条评估同不同意——同意的采纳（覆盖/合并进本地），不同意的保留本地并写明理由**。同时判定服务器 run 吃到的约束版本（找本代标记：`cpuwr_reg_grp`、10 分区排除清单、`-to RX_CLK` 的 UTC 行、`U_DPLC_DATA_GEN/*/D*`），用于解读这批报表 |
 | `common\clk_period.tcl` | **不动**（要求 pristine），有变化只汇报 |
 
+> **whole_session 硬规则（2026-11-17 用户指令，永久生效，优先级高于上表与一切包内容）**：`whole_session/` 目录（各 corner 的 `latest/` 与 `history/` 下均有，PT 会话存档，单 corner 数百 MB）**永不覆盖、永不入库**：
+> 1. **pack_diff 批准清单一律排除**——`whole_session` 路径不得进入 `approved.txt`（diff 报告里出现也只作计数汇报，不参与拍板批准）；
+> 2. **overlay 无视**——覆盖执行时该目录不是覆盖对象，任何包来源都不写它；
+> 3. **.gitignore 常备** `whole_session/`（或等效 `**/whole_session/` 行），缺则当场补上；
+> 4. **仓库已有跟踪路径的，用 `git rm -r --cached` 清除**（解除跟踪、磁盘文件保留），单独提交，不混进包覆盖提交。
+
 覆盖后必出的验证数字（确认上一轮修复是否被服务器吃到）：
 1. setup/hold 各 corner 总数与 worst（`summary/latest/report_setup.csv` / `report_hold.csv` 的 setup.rpt / hold.rpt 行）
 2. `read_cons.log` 搜 `SEL-004` 计数、搜 `/D1` `/D2` 计数（已知遗留项是否仍丢）
@@ -88,7 +95,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 - **双通道互备（2026-11-16 起）**：默认 HTTPS + gh 凭据免密（`gh auth setup-git` 已接管）；被掐时切 ssh 443：`git remote set-url --push origin ssh://git@ssh.github.com:443/<owner>/<repo>.git`，fetch 仍走 HTTPS 互不影响。
 - **坑：代理配置与实际监听端口脱节**——2026-11-16 实测本机系统代理是 `127.0.0.1:12450`（旧的 7890 记录已作废），而 `git`/`gh` **都是 Go/自管 HTTP 客户端，不读 Windows 的 IE 代理设置**，只认 `HTTPS_PROXY` / `HTTP_PROXY` 环境变量。症状是"浏览器能开 github、git 却超时"，报错像网络不通。排查顺序：`curl -x http://127.0.0.1:<port> https://github.com` 先验代理活 → 再确认环境变量。TUN/系统代理模式下没有可用的 HTTP 代理端口时，直接 `git config --global --unset http.proxy`。
 - 旧招留档：`git config http.version HTTP/1.1` + `http.postBuffer 524288000`（HTTP/2 层面问题时用）。
-- **超大目录不入库先例**：whole_session（PT 会话存档，单 corner 数百 MB）按用户指令 gitignore 永不推；历史 run 产物（log_/rpt_）逐笔推。
+- **超大目录不入库**：whole_session 按上方「whole_session 硬规则」处理（永不覆盖、永不入库）；历史 run 产物（log_/rpt_）逐笔推。
 
 ## 3. RTL（HDL）包
 
@@ -139,4 +146,4 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 **交互探针必须复刻完整 setup 链（0930 探针污染教训）**：在 bsub 节点上做增量精修/what-if 实验时，只 source design.set + clk_period + ip_cons **不够**——必须补齐 `dont_use_all.tcl`（流程禁用 *SFF*/*X05* 等单元族；漏 source 会导致 DC 自由使用禁用单元，实验数字成为"放宽规则的上界"，不代表生产环境）。完整链：design.set → clk_period.tcl → ip_cons → **dont_use_all.tcl** → 目标库 target/link_library 设置 → read_ddc/网表 → 实验。库限制在 `SYNTHESIS/common/tcl_dir/dc/dont_use_all.tcl`。
 
-<!-- ymzhu 2026-11-06 17:45 -->
+<!-- ymzhu 2026-11-17 13:48 -->
