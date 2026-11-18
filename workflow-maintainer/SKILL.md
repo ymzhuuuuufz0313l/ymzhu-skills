@@ -1,6 +1,6 @@
 ---
 name: workflow-maintainer
-description: Maintain user workflow preferences, change logs, and server handoff checklists. Trigger when user says "记录工作流", "我习惯", "生成变更日志", "准备回传服务器", "检查变更", "更新 CHANGES", "生成 REVIEW", or asks to record/modify workflow rules.
+description: Maintain user workflow preferences, change logs, and server handoff checklists. Trigger when user says "记录工作流", "我习惯", "生成变更日志", "准备回传服务器", "检查变更", "更新 CHANGES", "生成 REVIEW", or asks to record/modify workflow rules. 也负责文件尾签名规则（含 CHANGES.md 双签名例外、生成产物可复现例外）。
 ---
 
 # Workflow Maintainer Skill
@@ -35,9 +35,23 @@ description: Maintain user workflow preferences, change logs, and server handoff
 
 规则细节：
 - **替换而非累积**：同一文件多次更新时，把末尾签名**替换**为最新时间，不追加多行。
-- **无注释语法的文件**（如 `.csv`、`.tar.gz`）不添加。
+- **无注释语法的文件**（如 `.csv`、`.tar.gz`）不添加（`.json` 也无注释语法，同样不加；`search-index.json` 之类豁免）。
 - 纯二进制文件、生成产物（如 `latest/` 下的运行输出）不添加。
 - 该规则已同步写入各项目的 `AGENTS.md`「工作流偏好」章节；若某项目 AGENTS.md 缺失此条，以本规则为准并补录。
+
+### 例外一：`修改记录/CHANGES.md`（追加式日志，双签名）
+
+`CHANGES.md` 是**反序追加**的变更流水（新条目 prepend 到文件顶部），因此它同时具有两个签名位，这是唯一允许的双签名文件：
+
+- **条目内签名**：每条变更条目自带一行 `<!-- ymzhu YYYY-MM-DD HH:MM -->`，写进该条目正文——它是"这条变更的时间戳"，历史条目的签名**永不改动**；
+- **文件尾签名**：文件末尾保留一行 `<!-- ymzhu YYYY-MM-DD HH:MM -->`，表示"文件最后一次被编辑"，每次追加新条目时**替换**为最新时间。
+
+除 `CHANGES.md` 外，任何 `.md` / `.html` / 脚本都只允许**一个**尾签名。一次编辑后发现文件里出现两行尾签名（历史事故：签名正则锚定字符串末尾，而骨架签名位于 `</html>` 之前 → 每次生成都多一行），必须合并成最新一行。
+
+### 例外二：生成器产物（可复现优先）
+
+由生成器产出的 SVG/HTML，其**生成内容必须逐字节可复现**：生成器输出不含签名，落盘后由统一写出函数追加/替换尾签名。因此校验"生成器是否漂移"时，先剥离尾签名再 `cmp`（见 `blueprint-ui-style/references/figure-pipeline.md`）。
+
 
 ## Skill 本体的维护纪律（ymzhu，2026-09-20 起）
 
@@ -182,4 +196,4 @@ description: Maintain user workflow preferences, change logs, and server handoff
 - `CHANGES.md` 是累计日志，按日期追加，不删除历史记录。
 - **服务器操作一律走 dsh-ssh 插件**（ssh_exec / ssh_upload / ssh_download），本机文件与命令用本地工具；两类路径勿混，传输/覆盖前确认目标。
 
-<!-- ymzhu 2026-10-22 15:22 -->
+<!-- ymzhu 2026-11-18 10:46 -->
