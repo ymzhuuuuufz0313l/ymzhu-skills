@@ -10,6 +10,7 @@ description: 用户偏好的网页/UI 画风（蓝图工程风 blueprint enginee
 
 ## 使用规则（重要）
 
+-0. **改完必审（2026-11-18 ymzhu 指令，强制闸）**：凡按本 skill 产出的图（表格图/对比图/双版 SVG）与站点页面改动，完成后**必须经独立审查**——图=数字↔源数据逐格 + Σ片=中心值 + 双版配对；站点=A0–A9 + 站点校验门（check_article / check_anim_pairs / check_fx_clip / generate_search_index）。审查报告落盘、verdict=PASS 才算完成、才准进入邮件/交付汇报；**审查者不得是制作者本人**。与 -0.5 的分工表互补：改图前先体检（§验证门/图版生命周期），改完必审查（A0–A9），两头都是硬的。
 0. **与其他 skill 的分工**（矛盾时一律按本 skill）：
    - `frontend-design` 同时触发时只作工程质量清单，不得引入新配色/字体/视觉方向；
    - `fireworks-tech-graph` 给本画风站点画内嵌图必须改用站点 `:root` 色板；
