@@ -137,3 +137,5 @@ description: Initialize a complete AGENTS.md project context system for a newly 
 - 不要覆盖已存在的 `AGENTS.md` 或 `README.md`，除非用户明确要求。
 - 生成内容时，用实际扫描到的目录名和文件名替换模板中的占位符。
 - 如果当前目录不是项目目录（如用户主目录、系统根目录），拒绝执行并提示用户切换到正确目录。
+
+<!-- ymzhu 2026-11-18 14:32 -->

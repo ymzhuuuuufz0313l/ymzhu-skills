@@ -78,3 +78,5 @@ python3 "$SKILL_ROOT/scripts/check_req_uniqueness.py" --registry <csv> --check-d
 - 检查和生成可以做；**修复漂移前必须经用户确认**。
 - REQ_ID 只增不删不复用；废弃的 ID 在登记表中标记 deprecated。
 - 试点 → 验证 → 推广；不要一次在全项目强制铺开全套三层模型。
+
+<!-- ymzhu 2026-11-18 14:32 -->

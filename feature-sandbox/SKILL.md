@@ -115,3 +115,5 @@ Agent actions:
 1. Copy files from `current_work/` back to their real project paths.
 2. Update main project filelists, case lists, or `AGENTS.md` if needed.
 3. Only then consider adding a brief merge note to the root changelog.
+
+<!-- ymzhu 2026-11-18 14:32 -->

@@ -374,3 +374,5 @@ UTC_CNT_END（RSTN_POFF_CTL 导出，原 U9 OR4 输出 N8，加 port 送出）
   半径的 2.5~3×→ **APR 试绕前置**）。审计：153 模块/9631 实例零变动、18 pin diff 精确命中、
   真值表 4/4、零悬空。产物：`SYNTHESIS/ECO/20261110/apr/`（md5 c7da777b…）。
   判死金标准（FTT 平坦化 BFS 达顶层）见坑12；全链条报告 `script/eco_r2/R2_FINAL.md`。
+
+<!-- ymzhu 2026-11-18 14:32 -->

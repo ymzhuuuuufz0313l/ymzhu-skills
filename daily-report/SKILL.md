@@ -282,3 +282,5 @@ assign signal = a & b;
 - ⚠️ risk / external dependency / needs attention
 - 🟡 pending confirmation / low-risk observation
 - 🔵 resolved / closed
+
+<!-- ymzhu 2026-11-18 14:32 -->

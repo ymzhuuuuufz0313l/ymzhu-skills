@@ -110,9 +110,9 @@ description: Maintain the team-share VitePress knowledge base and publish standa
 3. TOC：有 h3 子项的 h2 有箭头、无子项的没有；点箭头只折叠不跳转；子项折叠时滚到组内 h3，高亮落在父级 h2；默认全展开；h3 文字明显缩进在 h2 之后；TOC 里能看到 `1.` / `1.1` 编号。
 4. 导航：当前页高亮；移动端可横向滚动；全站度量一致。
 5. 动/静切换按钮在顶部导航（由 fx.js 注入，页面不得硬编码 `#motionToggle`）；`?motion=static` 下内容完整、无半透明残留。
-6. **改图/换图三连**（2026-11-18 加）：该页引用处的 `?v=` 必须 bump；被替换的旧图已快照进 `images/archive/<YYYYMMDD>/`（同名不覆盖，只追加）；图门 `_svg_qa.py` / `_svg_anim_qa.py` 双 PASS。
-7. **搜索索引同源**：`search-index.json` 与 `search-index.js` 必须由同一脚本一次产出（页面实际加载哪份，就以哪份为唯一产物），改完页面后重跑生成器并 `--check` 过。
-8. **图内数字 == 正文数字**：同一量只允许一种写法（含精度/单位/组数）；组成图 Σ片 == 中心值，百分比分母 == 中心值。改数字时正文、表、图三处同一次提交内一起改。
-9. **站点体检**：改动已建站点的图或数字之前，先按 `anim-svg-site-audit` skill 的 A0–A9 做一遍只读体检，再动手。
+6. **改图/换图三连**（2026-11-18 加）：`?v=` bump / 旧图快照进 `images/archive/<日期>/`（只追加）/ 图门双 PASS——规则本体见 `blueprint-ui-style` §验证门与 §图版生命周期。
+7. **搜索索引同源**：`search-index.json` 与 `.js` 由同一脚本产出 + `--check` 守漂移（规则本体见 `blueprint-ui-style` 验证门 7）。
+8. **图内数字 == 正文数字**：同一量一种写法；Σ片==中心值、分母==中心（不变式本体见 `blueprint-ui-style/references/figure-pipeline.md`）。改数字时正文/表/图同一次提交一起改。
+9. **站点体检**：改已建站点的图或数字之前，先按 `blueprint-ui-style/references/site-audit.md` 的 A0–A9 做只读体检再动手。
 
 <!-- ymzhu 2026-11-18 10:46 -->

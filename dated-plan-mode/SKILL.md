@@ -40,3 +40,5 @@ When the user asks to enter plan mode (e.g. "进入planmode", "planmode", "计�
 | "进入planmode，写个重构计划" | `C:\Users\zhuyanming\.kimi\plans\hulk-iron-man-wasp.md` | `C:\Users\zhuyanming\Desktop\plan\0629_p1_hulk-iron-man-wasp.md` |
 | "planmode，文件名叫 api_design" | `C:\Users\zhuyanming\.kimi\plans\black-widow-thor-mrfantastic.md` | `E:\project\HK1V11\plan\0629_p2_black-widow-thor-mrfantastic.md` |
 | "进入计划模式" | `C:\Users\zhuyanming\.kimi\plans\storm-cyclops-jeangrey.md` | `{cwd}\plan\0629_p3_storm-cyclops-jeangrey.md` |
+
+<!-- ymzhu 2026-11-18 14:32 -->

@@ -77,3 +77,5 @@ python3 "$SKILL_ROOT/scripts/generate_regmap_assertions.py" --regmap <regmap.md>
 - 修改顺序永远是：regmap.md → RTL → 比对 → 登记。
 - 生成的文档/断言标注来源 regmap 文件与生成日期，便于追溯过期产物。
 - 访问类型只使用表内约定值（RO / WO / RW / W1C 等），新增类型前先更新 `references/regmap-format.md`。
+
+<!-- ymzhu 2026-11-18 14:32 -->

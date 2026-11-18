@@ -32,7 +32,7 @@ DSH 已安装 dsh-agent-teams 插件（desktop profile）：当前会话作为�
 
 1. **范围**：站点绝对路径 + 只读声明（禁止 `--write` / `--commit` / 改任何文件）。
 2. **清单**：`images/*.svg`、`anim/*.svg`、PNG、`*.html`、`search-index.*` 的**计数**（让成员先报数，防"扫了 0 个也 PASS"）。
-3. **维度**：直接引用 `anim-svg-site-audit` 的 A0–A9，不重写判据。
+3. **维度**：直接引用 `blueprint-ui-style/references/site-audit.md` 的 A0–A9，不重写判据。
 4. **上下文纪律**：切片读 ≤200 行 / 聚合用脚本 / 命令输出 ≤200 行 / 不读大 PNG（见 `subagent-dispatch`）。
 5. **交付物**：报告写到 `修改记录/<task>/<site>.md`（每站一个文件，写者互不重叠），最后回一条 ≤30 行摘要。
 

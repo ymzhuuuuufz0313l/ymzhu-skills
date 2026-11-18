@@ -137,3 +137,5 @@ description: 为"多版本归档目录"（类似 LC_CPUWR_history，同一模块
 - **登记 L 级**：目录内 `CHANGES.md` 的每条版本记录除版本号/摘要外，必须写变更级别 `L0/L1/L2/L3`（定义见项目 `AGENTS.md §3.1`）。级别决定该版本要求哪几关闸门。
 - **登记代际探针**：版本带"代际标志"（某符号应消失/应出现/应达 N 次）时，同步在项目 `script/gates/probes.json` 追加一条，并在 `CHANGES.md` 该条末尾注明探针 pattern 与期望值；否则回传后无法机器确认覆盖成功。
 - **版本可交付判定**：该版本的 `preflight --level <该版本L级>` 报告存在且 `verdict=pass`，才算"该版本完成"。`CHANGES.md` 里写"已完成"但无报告 = 不算。
+
+<!-- ymzhu 2026-11-18 14:32 -->

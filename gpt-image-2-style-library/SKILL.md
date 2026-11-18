@@ -59,3 +59,5 @@ To install the skill into the local Codex skill folder, run:
 ```bash
 npm run install:skill
 ```
+
+<!-- ymzhu 2026-11-18 14:32 -->

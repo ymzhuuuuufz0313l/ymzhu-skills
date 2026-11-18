@@ -116,3 +116,5 @@ If COM fails (e.g., Office not installed or password prompt appears) and `read_p
 3. Share that file or image instead.
 
 > **Compliance note**: this skill only reuses access the current Windows session already legitimately has (cached Office/Acrobat credentials, DLP transparent decryption for trusted processes). Do not attempt to crack passwords, and do not write decrypted copies of DLP-protected files to locations the user did not ask for.
+
+<!-- ymzhu 2026-11-18 14:32 -->
