@@ -45,6 +45,19 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 3. **提交后自检**（overlay_check 内置）：带 `--commit` 时它会 `git log --stat` 复核提交里的文件数与预期一致；不一致就是漏加，`git commit --amend` 补。
 4. 解压产物目录（`script\_syn_*` / `_rtl_*` / `_dv_*`）靠 `.gitignore` 排除；若 overlay_check 把解压目录报成未跟踪杂散，说明 gitignore 漏了，补一行而不是 `git add` 进去。
 
+## 0C. 报告落位硬规则（2026-11-18 ymzhu 指令：base 目录不许乱）
+
+**仓库根目录禁止新增报告类文件**。分类落位：
+
+| 产物 | 落位 |
+|---|---|
+| pack_diff 五桶报告 / approved(.applied) 清单 / overlay 审计与基线 / 中间版本说明 `README_中间版本说明_<ver>.md` / 各类一次性分析报告 | `script/` |
+| 功耗/对比图等成套图产物 | 既有专项目录（`back_ppt/` 等生成器同目录） |
+| 长期维护的分析文档 | `docs/`，并在 AGENTS.md 文档索引登记 |
+| 根目录仅允许 | `AGENTS.md`、`README.md`、`REVIEW.md`（闸门生成物）、文档索引已登记的维护文档 |
+
+执行纪律：agent 落盘前自检路径首段——非上表允许项且落在根目录 = 违规，改落 `script/` 再继续；发现历史残留报告随手 `git mv` 进 `script/` 并在 CHANGES 记一笔。
+
 ## 0. 包定位与目录映射
 
 1. **远端操作默认禁用（2026-11-06 ymzhu 指令，取代旧"agent 自己拉取"规则）**：回传包一律由**用户手动下载**到 `C:\Users\zhuyanming\Downloads\`（包源通常是内网工作站，与 IC_EDA VM 无关），agent 从 Downloads 起步。未经用户**当次会话明确授权**，agent 不得对任何 ssh 远端主机（IC_EDA VM、内网工作站或其他一切主机）执行 ssh_exec / ssh_upload / ssh_download / ssh_tunnel / ssh_cluster 操作——包括 ls 探查等"只读"命令一律禁止（2026-11-06 教训：agent 依据旧规则自行 ssh 探查 VM 被叫停；回传源头是内网工作站，与 VM 无关）。
@@ -101,7 +114,7 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 
 **合并式覆盖到本地 `HDL\`**（与 DV_TCON_C 同一套规则）：同名文件覆盖、新增文件添加（影响 file_list 就同步 `.f`）、本地独有文件保留。
 
-- 覆盖是**同步动作，不做 check/评审**——只记录覆盖/新增/保留了哪些文件，写进 `README_中间版本说明.md`（快照来源 + diff 摘要 + 文件清单），文末签名。
+- 覆盖是**同步动作，不做 check/评审**——只记录覆盖/新增/保留了哪些文件，写进 `script/README_中间版本说明_<ver>.md`（快照来源 + diff 摘要 + 文件清单），文末签名。
 - **寄存器相关模块特别 diff（2026-11-06 ymzhu 要求）**：HDL 包内 LC_CPUWR / LC_REG_MAPPING / LC_REG* / R_REG* 体系等寄存器相关文件必须从普通 diff 清单中**单列呈报**（完整差异，不并入汇总）；批准覆盖后按 version-archive 规则维护 `LC_CPUWR_history/`（固定文件名+文件头版本号、目录内 CHANGES.md 与根级修改记录双轨、README 版本速查表），并登记 `back3.HK1V11_changelist.xlsx` Register Change 表。
 - RTL 三关（iverilog / rtl-code-review / rtl-signal-trace）**不适用**于包覆盖：那是"本地自行修改 RTL 功能并发布新版本"时才走的流程；服务器回传包是权威交付物的搬运，交付级记 **L1**（签名 + CHANGES + 提交推送）。
 - 同一次交付里既有包覆盖、又有本地改 RTL 功能时，那一轮按**更高**的级走（改功能 → L2，涉及时序/编码变更 → L3），不要用"包里带来的"当豁免理由。
