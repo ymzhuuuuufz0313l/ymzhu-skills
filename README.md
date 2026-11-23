@@ -41,6 +41,7 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 | `spec-traceability` | spec↔code 轻量追溯：REQ_ID 分配/唯一性、spec hash 漂移检测、版本一致性审计 |
 | `digital-backend-pitfalls` | 数字后端经验坑集：cell 引用稳定性（post-route 探针/999 哨兵）、跨工具 SDC、ICG 复位机制、蓝/红路径约束矩阵（DC/PT vs Innovus/ICC） |
 | `netlist-metal-eco` | 网表级金属层 ECO：死锥分析找可复用门（`&~`/AND2B1/NAND2B1）+ 三步金属层重接线 + 极性判定 + 驱动/时序/功能风险闸门；判断"只改走线可不可行" |
+| `power-eco` | DC 后网表（pre-APR）功耗 ECO：报告对比定位模块 → 网表裸挂 flop 底表 + EN 回溯 + RTL「DC 不敢做」四类/「FF 冗余」四形态 → ECO 候选清单（用户拍板）→ 网表先行加叶子级 ICG/删冗余寄存器（CTS 树不动）→ RTL 跟上 → Yosys miter + LEC + case 三道证据；树级时钟/架构重构/PTPX 不在范围 |
 | `local-simulation` | Windows 本机开源工具链（Icarus Verilog + GTKWave / Yosys）跑 Verilog/SV 模块，不依赖 VCS/UVM |
 | `xilinx-suite` | Xilinx(AMD) FPGA/MPSoC 全工具链参考：Vivado XDC 约束、Tcl、综合实现、报告分析、CDC/时序例外（源自 MIT 开源库，按 HK1V11 VU440 场景改编） |
 | `server-pack-overlay` | 服务器回传包（PACK_TAR_*.tar.gz）提取 + 合并式覆盖规则（SYNTHESIS/HDL/DV_TCON_C 三类包口径） |
@@ -83,4 +84,4 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 |---|---|
 | `office-com-reader` | 读取加密/受保护的 Office（xlsx/docx/pptx）与 PDF：原生 COM API + pypdf + Acrobat COM 兜底，兼容企业 DLP 透明加密 |
 
-<!-- ymzhu 2026-11-02 18:05 -->
+<!-- ymzhu 2026-11-23 14:40 -->
