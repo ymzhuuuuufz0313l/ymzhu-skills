@@ -39,6 +39,8 @@ python script/gates/preflight.py --level L3 --require-pushed
 # 回传 overlay
 python script/gates/overlay_check.py pre  --package HDL
 python script/gates/overlay_check.py post --package HDL --paths HDL/ [--commit]
+python script/gates/overlay_check.py post --package SYNTHESIS --paths SYNTHESIS/ --approved-adds script/approved_adds_<ver>.txt [--commit]
+# pre 只要求「本包范围内」干净；新增（含未 git add 的未跟踪新文件）必须在 --approved-adds 清单内，清单外 FAIL（2026-11-23）
 ```
 
 `--package` 取 `SYNTHESIS` / `HDL` / `DV_TCON_C`。
@@ -71,4 +73,4 @@ python script/gates/overlay_check.py post --package HDL --paths HDL/ [--commit]
 
 `scripts/preflight.py`、`scripts/overlay_check.py` 是项目 `script/gates/` 的镜像。**以项目内副本为准**；改脚本时两处同步（项目改完覆盖本目录），然后各自提交。
 
-<!-- ymzhu 2026-11-18 10:43 -->
+<!-- ymzhu 2026-11-23 16:20 -->
