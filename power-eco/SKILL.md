@@ -244,7 +244,7 @@ yosys -p "read_verilog -lib cells_stub.v; read_verilog before.v; rename MOD gold
 
 | 项 | 规则 |
 |---|---|
-| 产物目录 | `power_saving/<date>/ECO_<name>/`：`<top>_eco.gv` + `eco.diff` + `ECO_RECORD.md` + `miter/` + LEC 日志 + case 结果。**不进 SYNTHESIS/**（overlay 校验管着的服务器同步目录） |
+| 产物目录 | `内部分享/power_saving/<date>/ECO_<name>/`：`<top>_eco.gv` + `eco.diff` + `ECO_RECORD.md` + `miter/` + LEC 日志 + case 结果。**不进 SYNTHESIS/**（overlay 校验管着的服务器同步目录） |
 | `ECO_RECORD.md` | 每个 ECO 一段：目标组 / 网表改动（实例名/行号/前后）/ EN 信号与域 / 时钟域 L1 结论 / DFT 行（固定："新增 ICG N 个，TE=1'b0，DFT 插 scan 需确认 TE 可控"）/ 三道证据路径 / 对应 RTL 改动（文件:行） |
 | 闸门 | RTL 改动按 **L2** 走（`rtl-code-review` + preflight）；网表证据（miter + LEC + case）作 L2 评审附件 |
 | 变更记录 | `修改记录/CHANGES.md` 登记（AGENTS.md §3.1 强制） |
@@ -265,7 +265,7 @@ yosys -p "read_verilog -lib cells_stub.v; read_verilog before.v; rename MOD gold
 
 ### 首个样板 ECO_A1_pix_clk_en 跑出的四条规则（2026-11-23）——注意：A1 本身已被 F 类判定为 0 收益，这四条是流程规则，不是收益背书
 
-样板目录：`HK1V11/power_saving/20261119/ECO_A1_pix_clk_en/`（ECO_CANDIDATES / apply_eco.py / eco.diff / ECO_RECORD / miter）。
+样板目录：`HK1V11/内部分享/power_saving/20261119/ECO_A1_pix_clk_en/`（ECO_CANDIDATES / apply_eco.py / eco.diff / ECO_RECORD / miter）。
 
 1. **网表改写必须二进制读写**：DC 网表是 `\n` 行尾；Python `read_text`/`write_text` 在 Windows 会转成 `\r\n`，diff 从 +11 行膨胀到 53207 行（每行都"变"）。用 `read_bytes().decode()` / `write_bytes()`。另存后必查 `diff | grep -c "^[<>]"` 与预期行数一致。
 2. **用带断言的脚本改，不手改**：`apply_eco.py` 每步计数断言（目标 flop 数=25、CK 改写数=25、ICG 实例数=1）。首跑就拦住一个 bug（`m in targets` 用 Match 对象做成员判断恒 False → 改写数 0 ≠ 25 → `die`）。
@@ -284,7 +284,15 @@ module GCKHBQX4AL9 (CK, E, TE, Q); input CK,E,TE; output Q; reg latch;
 
 ## 六、报告怎么写、issue 怎么发（模板 = HK1V11 的 issue 2、3、4）
 
-ymzhu 2026-11-24 定的规矩：**体检的产出直接写成 GitHub issue**，一条大候选一张票。issue 2 是"体检总表"的模板，issue 3（S-1）和 issue 4（P-1）是"单条候选"的模板——发新票之前先把这三张读一遍，照着它们的节次和口吻写。
+ymzhu 2026-11-24 定的规矩：**体检的产出直接写成 GitHub issue**，一条大候选一张票。模板在 HK1V11 仓库的 issue 里（全部票：https://github.com/ymzhuuuuufz0313l/HK1V11/issues ）：
+
+| 模板 | 地址 | 学什么 |
+|---|---|---|
+| 体检总表 | https://github.com/ymzhuuuuufz0313l/HK1V11/issues/2 | 结论一屏怎么排；哪些模块要明确写"不是 DC 没做好"；口径更正、待拍板、范围外观察怎么列 |
+| 单条候选 · 门控类 | https://github.com/ymzhuuuuufz0313l/HK1V11/issues/3 | 八节结构；"行里其余时间全是 0 为什么要门控"的问答；用现有 cell 演示改前改后 |
+| 单条候选 · 组合隔离类 | https://github.com/ymzhuuuuufz0313l/HK1V11/issues/4 | 时钟已关但组合空转怎么定价；隔离条件为什么必须等于消费条件 |
+
+发新票之前先把这三张读一遍（`gh issue view 3 -R ymzhuuuuufz0313l/HK1V11 --json body -q .body`），照着它们的节次和口吻写。这三张会随问答继续演进，以线上版为准；下面的八节表只是摘要。发票用 deck 工具：先 `deck_context`，再 `deck_issue_create`；用户提问用 `deck_issue_patch` 记原话和回答。
 
 ### 总表票（模板：issue 2）
 
@@ -329,8 +337,4 @@ ymzhu 2026-11-24 定的规矩：**体检的产出直接写成 GitHub issue**，�
 - `hk1v11-delivery-gate`：RTL 侧 L2 闸门
 - `rtl-code-review` / `rtl-signal-trace`：RTL 跟上后的评审
 - `local-simulation`：Yosys miter 的本机环境
-
-
-
-
-<!-- ymzhu 2026-11-24 16:50 -->
+<!-- ymzhu 2026-11-24 16:52 -->
