@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""power-eco 第①步入口：DC 门级网表全设计底表（只读，不改网表）。
+"""power-clinic 第①步入口：DC 门级网表全设计底表（只读，不改网表）。
 
 用法:
   python build_tables.py <netlist.gv> --out <ECO_HEALTH 目录> [--powercsv hier_pwr_detail.csv] [--mods M1,M2]
@@ -841,4 +841,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-# ymzhu 2026-11-24 11:45
+# ymzhu 2026-11-24 17:05

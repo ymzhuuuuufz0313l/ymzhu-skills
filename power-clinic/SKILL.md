@@ -1,9 +1,11 @@
 ---
-name: power-eco
-description: DC 后网表（pre-APR）功耗体检与 ECO。主入口是第一步体检——网表时钟网谱系 × RTL 定性 × PowerPro 四场景功耗三方交叉，找"哪里代码 DC 没做好"，只 D/E/G 类进候选，每条写成一张 GitHub issue（现状→因果→改法→为什么对→好处→风险；范例 HK1V11 issue 2/3/4）。拍板后才网表先行改（叶子级 ICG、删冗余 FF，CTS 不动）、RTL 跟上、miter+LEC+case。树级时钟改动、PTPX 不在范围。触发词：功耗 ECO、DC 优化体检、哪里 DC 没做好、哪里 DC 没门控、power eco、四场景功耗、网表加 ICG、DC 后网表改门控、哪里 DC 不敢优化、裸挂 flop、跨域寄存器、冗余 FF、删寄存器、网表先行、ECO 候选清单、DC 抢跑、PIX_CLK_EN。
+name: power-clinic
+description: DC 后网表（pre-APR）功耗体检与 ECO。主入口是第一步体检——网表时钟网谱系 × RTL 定性 × PowerPro 四场景功耗三方交叉，找"哪里代码 DC 没做好"，只 D/E/G 类进候选，每条写成一张 GitHub issue（现状→因果→改法→为什么对→好处→风险；范例 HK1V11 issue 2/3/4）。拍板后才网表先行改（叶子级 ICG、删冗余 FF，CTS 不动）、RTL 跟上、miter+LEC+case。树级时钟改动、PTPX 不在范围。触发词：功耗 ECO、功耗会诊、DC 优化体检、哪里 DC 没做好、哪里 DC 没门控、power clinic、四场景功耗、网表加 ICG、DC 后网表改门控、哪里 DC 不敢优化、裸挂 flop、跨域寄存器、冗余 FF、删寄存器、网表先行、ECO 候选清单、DC 抢跑、PIX_CLK_EN。
 ---
 
-# power-eco — DC 后网表功耗 ECO：体检 → 找点 → 网表先行 → RTL 跟上 → 三道证据
+# power-clinic — DC 后网表功耗会诊与 ECO：体检 → 找点 → 网表先行 → RTL 跟上 → 三道证据
+
+> **名字**：2026-11-24 由 power-eco 改名。重心在"会诊"——网表时钟网谱系、RTL 定性、PowerPro 四场景功耗三方交叉出诊断和 issue；网表 ECO 是拍板之后的执行段。旧文档里写的 power-eco 就是本 skill。
 
 ## 何时用
 
@@ -60,9 +62,9 @@ description: DC 后网表（pre-APR）功耗体检与 ECO。主入口是第一�
 #### ①-a 全设计底表（脚本，1 秒）
 
 ```bash
-python ~/.dsh/skills/power-eco/scripts/build_tables.py <netlist.gv> --out <ECO_HEALTH 目录> \
+python ~/.dsh/skills/power-clinic/scripts/build_tables.py <netlist.gv> --out <ECO_HEALTH 目录> \
        --powercsv <hier_pwr_detail.csv> --mods <模块关键字>
-python ~/.dsh/skills/power-eco/scripts/q.py flops.csv --where module=XXX --cols inst,ck,ck_cls,q_loads --head 40   # 查表
+python ~/.dsh/skills/power-clinic/scripts/q.py flops.csv --where module=XXX --cols inst,ck,ck_cls,q_loads --head 40   # 查表
 ```
 
 产出 `data/*.csv`：`flops.csv`（每个 flop 的 CK、时钟来源类别、D 锥叶子、Q 负载、死锥判定）、`icgs.csv`（每个 ICG 的 EN 源与 EN 锥门数）、`clk_genealogy.csv`（时钟网谱系）、`bare_groups.csv`（裸挂按寄存器名归组）、`redundant_candidates.csv`（死 / 重复 / 直通 / 常量 D）、`power_by_module.csv`（PowerPro 自身功耗）。
@@ -337,4 +339,4 @@ ymzhu 2026-11-24 定的规矩：**体检的产出直接写成 GitHub issue**，�
 - `hk1v11-delivery-gate`：RTL 侧 L2 闸门
 - `rtl-code-review` / `rtl-signal-trace`：RTL 跟上后的评审
 - `local-simulation`：Yosys miter 的本机环境
-<!-- ymzhu 2026-11-24 16:52 -->
+<!-- ymzhu 2026-11-24 17:05 -->

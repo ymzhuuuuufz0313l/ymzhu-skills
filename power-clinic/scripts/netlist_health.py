@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""power-eco 第①步：DC 优化体检——全设计 flop 门控覆盖率逐模块统计。
+"""power-clinic 第①步：DC 优化体检——全设计 flop 门控覆盖率逐模块统计。
 用法: python netlist_health.py <netlist.gv> [--min-flops 20] [--top 30]
 输出 ≤30 行模块表（按裸挂数降序）+ 全设计汇总。只读网表。
 """
@@ -54,4 +54,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-# ymzhu 2026-11-24 10:05
+# ymzhu 2026-11-24 17:05

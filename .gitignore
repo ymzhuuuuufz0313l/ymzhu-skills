@@ -2,3 +2,7 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Python 缓存（py_compile / import 产物）
+__pycache__/
+*.pyc
