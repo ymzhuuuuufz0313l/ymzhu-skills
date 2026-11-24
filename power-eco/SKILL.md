@@ -1,9 +1,9 @@
 ---
 name: power-eco
-description: DC 后网表（pre-APR）功耗 ECO 工作流——从 PowerPro 报告对比定位高功耗模块，结合网表（裸挂 flop 底表 + EN 回溯）与 RTL（DC 不敢优化的写法、冗余 FF）找 ECO 点，网表先行改（叶子级 ICG / 删冗余寄存器，CTS 树不动），RTL 同步跟上，Yosys miter + LEC + case 三道证据闭环。与 netlist-metal-eco（金属层）互补；树级时钟改动、架构重构、PTPX 不在范围。触发词：功耗 ECO、power eco、网表加 ICG、DC 后网表改门控、哪里 DC 不敢优化、裸挂 flop、跨域寄存器、冗余 FF、删寄存器、网表先行、ECO 候选清单、DC 抢跑、PIX_CLK_EN。
+description: DC 后网表（pre-APR）功耗 ECO 工作流——先做三方交叉体检（网表裸挂 flop × PowerPro register 分量 × RTL 定性'DC 为什么没门控'，A/B/C 类不该门控显式跳过，只 D/E 类进候选），再排优先级、网表底表、RTL 冗余 FF 扫描找 ECO 点，网表先行改（叶子级 ICG / 删冗余寄存器，CTS 树不动），RTL 同步跟上，Yosys miter + LEC + case 三道证据闭环。与 netlist-metal-eco（金属层）互补；树级时钟改动、架构重构、PTPX 不在范围。触发词：功耗 ECO、DC 优化体检、哪里 DC 没做好、power eco、网表加 ICG、DC 后网表改门控、哪里 DC 不敢优化、裸挂 flop、跨域寄存器、冗余 FF、删寄存器、网表先行、ECO 候选清单、DC 抢跑、PIX_CLK_EN。
 ---
 
-# power-eco — DC 后网表功耗 ECO：找点 → 网表先行 → RTL 跟上 → 三道证据
+# power-eco — DC 后网表功耗 ECO：体检 → 找点 → 网表先行 → RTL 跟上 → 三道证据
 
 ## 何时用
 
@@ -29,29 +29,59 @@ description: DC 后网表（pre-APR）功耗 ECO 工作流——从 PowerPro 报
 
 ---
 
-## 一、找点（三步，产出 ECO 候选清单）
+## 一、找点（四步：体检三方交叉 → 排序 → 网表底表 → RTL 扫描）
 
-### ① 报告定位——先定模块，再进网表
+### ① DC 优化体检——三方交叉判定"DC 哪里没做好"（必做，先于一切）
 
-**对比型报告**（long/short 两份 csv、mode A/B）：逐模块对比
+**判据定义**：一个 flop 组算"DC 优化没做好"，必须**三条同时成立**——缺一条就不是 ECO 点：
 
-| 模块 | 模式 A | 模式 B | Δ | register 占比 | 判断 |
-|---|---:|---:|---:|---|---|
-| LONG_ALIGN | 6136 | SHORT 2917 | +3219 | 74.7% | register 主导，看 ICG 空白 |
-| LONG_DECODE | 4668 | SHORT 1688 | +2980 | — | 同上 |
+| 维度 | 问什么 | 数据源 | 缺了会怎样 |
+|---|---|---|---|
+| **网表** | 这组 flop 的 CK 是不是裸挂，**且该时钟网源头没有被同 EN 门控** | 网表 grep + 时钟网溯源 | 只看叶子 → F 类误判（A1/A2 样板即此坑） |
+| **报告** | 这个模块的 register 分量值多少钱（≥ 几百 µW 才值得） | PowerPro csv `;register;` 行 | 看不见 DC 做没做（RTL 级对 ICG 全盲，已证） |
+| **RTL** | **为什么没门控**——DC 不敢（跨域/复位特殊/写法问题），还是语义上不该门控（同步器/每拍必刷的限定词） | RTL 源码 + 网表 D 端回溯 | **把"不该门控"误判成空白** |
 
-差值大的模块直接锁定（HK1V11 用这法子定出了 OUTPUT/ALIGN/DECODE 三块）。
+**反例二（HK1V11 A1/A2 样板，2026-11-24 eco-output 发现）**：OUTPUT 的 PIX_DATA 组 25 flop、CONFIG 组 26 flop 叶子看是裸挂 `DCLK_DATA`/`DCLK_CONFIG`——但追到 CLKGEN（网表 621-628）：`DCLK_DATA = MUX(PIX_CLK_LONG, …)`，`PIX_CLK_LONG = CG_CELLX4_8(ENA=PIX_CLK_EN_LONG)`。**时钟网本身就是同一个 EN 门控后的输出**，叶子再串同 EN 的 ICG = 冗余，增量功耗 0，只多面积和一级延迟。miter 证"无条件等价"就是铁证——叶子 ICG 真改了行为不可能无条件等价。**规则：叶子裸挂 flop 的时钟网必须追到源头（CLKGEN / 上级 ICG 输出），若源头已有同 EN 的 ICG，判 F 类（冗余），跳过。**整网级排查：`DCLK_CONFIG`(69 裸挂)、`PIX_CLK`(258 裸挂) 这类以时钟网为单位的裸挂，先查该网的生成链再谈叶子。
 
-**单份报告**：按 total 排 top-N（默认 5），每行带 register/comb/clk 三分账 + **可动性初判**，**列给用户、由用户指定**：
+**反例一（HK1V11 BUFFER_I）**：网表体检 84/84 裸挂（100%、零 ICG）——像是大空白；RTL 一看是 `INDATA_SYNC_D1/D2/D3` 20bit × 3 级**输入同步器链**，每拍必须采样，**门控即 bug**。只看网表会把它排进主战场。
 
-| 可动性初判 | 含义 | 对应 ECO 类型 |
-|---|---|---|
-| register 主导 + 网表有裸挂 | DC 没做，有空子 | (a) 叶子级 ICG |
-| register 主导 + 网表已门控 | DC 做过了 | 低优先，看 EN 锥贵不贵 |
-| comb 主导 | 组合翻转 | 删 FF / 组合（占位） |
-| total 小（<500 µW） | 池子小 | 跳过 |
+#### ①-a 网表扫描（入口，10 分钟）
 
-### ② 网表底表——候选模块的裸挂 flop 与 EN 回溯
+```bash
+python ~/.dsh/skills/power-eco/scripts/netlist_health.py <netlist.gv> --top 30
+```
+输出逐模块 flops / ICG / 裸挂数 / 裸挂%，按裸挂数降序。**这只是候选入口，不是判定**。
+
+#### ①-b 报告交叉（定价）
+
+对 ①-a 列出的每个模块，从 PowerPro csv `hier_pwr_detail.csv` 该模块段取 `;register;` 行的 Total Power。规则：
+- register < 300 µW → **跳过**（池子小，ECO 成本不划算）
+- register ≥ 300 µW 且裸挂% ≥ 20% → 进入 ①-c
+
+#### ①-c RTL 定性（判"DC 为什么没做"——真正的判据）
+
+对进入 ①-c 的模块，先做**时钟网溯源**：列出该模块裸挂 flop 所有时钟网，逐网在网表全局 grep 其驱动（`.O(DCLK_x)` / `.CG_CLK(DCLK_x)` / `assign DCLK_x`），记录每条网的生成链（是否经过 ICG、ENA 是谁）——这张"时钟网谱系"是后面所有定性的前提。然后把裸挂 flop 按**寄存器名**归组（`_reg[N]_` 去掉位号后聚类），每组回 RTL 找对应的 always 块，归入六类：
+
+| RTL 定性 | 特征 | 判定 | 处置 |
+|---|---|---|---|
+| **A. 同步器/重同步链** | `_SYNC`/`_D1/_D2/_D3` 后缀，D 直连上一级 Q，无使能 | **不该门控**（门控即丢数据） | 跳过 |
+| **B. 每拍必刷的协议限定词** | `dvld`/`last`/`start`/`valid` 类 1bit，无条件赋值 | **不该门控** | 跳过 |
+| **C. 单 bit 控制位** | 状态机标志、配置位 | DC 不划算 | 跳过（<5 µW） |
+| **D. DC 不敢——跨域采样** | 跨域重同步的**末级**，D 直连源域信号，有同源/同步 EN 可用 | **DC 没做好** | (a) 叶子级 ICG |
+| **E. DC 不敢——写法问题** | RTL 无条件写 `q <= d`，但数据实际有静止窗；EN 在 RTL 里现成 → 加 ICG；EN 要新综合 → **需 RTL 先行** | **DC 没做好** | (a) / RTL 先行 |
+| **F. 时钟网源头已门控** | 叶子 CK 裸挂 `DCLK_x`，但 `DCLK_x` 在 CLKGEN 已是**同 EN** 的 ICG 输出（追 `.CG_CLK`/`.O` 驱动链） | **叶子 ICG 冗余** | 跳过；若要省，换**更紧的 EN**（源寄存器更新窗口），且注意独立 beat 的信号要分组 |
+
+**产出**：`ECO_HEALTH.md`——每个候选模块一段：网表数字 / register µW / 裸挂 flop 按名归组表 / 每组 RTL 定性（A~E）/ 行号 / **结论（跳过 / 进入 ECO_CANDIDATES）**。
+
+**只有 D/E 两类进 ECO 候选清单。A/B/C/F 四类必须显式列出并标跳过理由**——证明看过、不是漏了。
+
+**同时体检 DC 自门控的代价**（判据④的输入）：对已有 ICG 回溯 EN 锥门数（`grep "\.O(EN_NET)"` 追驱动链），>50 门的标记为"改接 EN 候选"。
+
+### ② 报告定位——多候选间排先后
+
+①-b 已用报告定了价，这一步只对**对比型报告**补 long/short 差值确认（结构性溢价 vs 空转残留），给 ①-c 产出的多个 D/E 候选排优先级。**单份报告时此步可省。**
+
+### ③ 网表底表——候选模块的裸挂 flop 与 EN 回溯
 
 对候选模块段（网表里 `module <top>_<MOD>_0 (` 到 `endmodule`）：
 
@@ -77,7 +107,7 @@ grep -n "\.O(EN_NET)\|\.Y(EN_NET)" $N
 - **L1 域关系**：EN 信号在哪个时钟域？被门控 flop 在哪个域？查 SDC 的 `create_generated_clock` 链——同源（如 DCLK 和 DCLK_DATA 都是 RX_CLK 分支）= 同步，PT gating check 覆盖；真异步（OSC_CLK/I2C_CLK → DCLK）= 需同步器，否则 runt
 - **L2 marker**：`_ASYNC` 后缀、跨域寄存器对——这是"DC 不敢碰"的路标，也是 ECO 富矿
 
-### ③ RTL 扫描——"写得烂导致 FF 多"的四形态
+### ④ RTL 扫描——"写得烂导致 FF 多"的四形态
 
 | 形态 | RTL 特征 | 删法 | 级别 | 第一版 |
 |---|---|---|---|---|
@@ -88,7 +118,7 @@ grep -n "\.O(EN_NET)\|\.Y(EN_NET)" $N
 
 死锥判法见 `netlist-metal-eco` §一（有负载 ≠ 活络，要追到锥尾）。
 
-### 产出：`ECO_CANDIDATES.md`
+### 产出：`ECO_HEALTH.md`（①-c，三方交叉体检）+ `ECO_CANDIDATES.md`（③④ 后，只含 D/E 类）
 
 ```markdown
 | # | 目标组 | 网表行号/实例 | CK 来源 | 候选 EN（名/域/复位值） | DC 为何没做 | 类型 | 预估收益 | 风险 | 时钟域 L1 | 做? |
@@ -187,13 +217,14 @@ yosys -p "read_verilog -lib cells_stub.v; read_verilog before.v; rename MOD gold
 
 ## 五、HK1V11 实证（2026-11-20~23）
 
-- 全设计裸挂 flop 底表：DCLK 554 / DCLK_DATA 74 / DCLK_CONFIG 68 / OSC_CLK 59 / DCLK_INV 56 / SD_CLK_INV 26 —— 约 845 个，DC 自动 ICG 覆盖 148 个（76%）
+- **全设计 DC 体检（2026-11-24，`scripts/netlist_health.py`）**：2921 flop，1551 接 ICG（53%），**1370 裸挂（47%）**。逐模块裸挂：**LONG_ALIGN 172/212（81%）** > DPLC_DATA_GEN 160/256（62%）> SHORT_OUTPUT 146/226 > SHORT_ALIGN 126/146（86%）> DTCTL 115/172 > CHPI_SD_CTRL 85 > **BUFFER_I 84/84（100%，零 ICG）** > SHORT_DECODE 75 > LONG_DECODE 71 > LONG_OUTPUT 65/276（24%）> LC_CPUWR 4/518（1%）。裸挂按时钟网：DCLK 566 / **PIX_CLK 258**（DPLC_DATA_GEN 主时钟）/ CLKIN_I 80 / DCLK_DATA 77 / DCLK_INV 76 / DCLK_CONFIG 69。网表入口显示 ALIGN 最大，**但裸挂多 ≠ DC 没做好**：BUFFER_I 84/84 裸挂经 RTL 定性是输入同步器链（A 类，门控即 bug），必须跳过——这就是体检要三方交叉、不能只看网表的理由。round2 盯 ALIGN 组合逻辑半月未数 flop 覆盖率，则说明只看报告同样不够。
+- 裸挂按时钟网（旧 grep 口径，漏多行实例，仅存档）：DCLK 554 / DCLK_DATA 74 / DCLK_CONFIG 68 / OSC_CLK 59 / DCLK_INV 56 / SD_CLK_INV 26
 - **DC 抢跑只有两形态**：写使能→CG、常量等式压缩。纯组合 operand isolation 从不被抢，被吃的是收益分母——µW 推算先取 csv comb 分项
 - **RTL 级 PowerPro 对 DC 的 148 个 ICG 全盲**：RTL 级数字只判 switching 方向，不作收益定数（HK1V11 实测：C3 RTL 级 +7 µW，L47 switching −28.65 是真信号，internal +27.67 是反馈 mux 罚分）
 - 叶子级 ICG 的 CTS 副作用：新 ICG 让目标 flop 多一级 cell delay（100~200 ps），CTS 做 skew 平衡时可能给同域其他 flop 补 delay——工具自动行为，不是改 tree
 - 时钟域 L1 实例：`PIX_CLK_EN`（DCLK 域）门控 `PIX_DATA`（DCLK_DATA 域）——SDC 查得 DCLK = I_CLKIN 直通、DCLK_DATA = I_CLKIN→ICG→MUX，**同源同步**，PT gating check 覆盖，不需同步器
 
-### 首个样板 ECO_A1_pix_clk_en 跑出的三条规则（2026-11-23）
+### 首个样板 ECO_A1_pix_clk_en 跑出的四条规则（2026-11-23）——注意：A1 本身已被 F 类判定为 0 收益，这四条是流程规则，不是收益背书
 
 样板目录：`HK1V11/power_saving/20261119/ECO_A1_pix_clk_en/`（ECO_CANDIDATES / apply_eco.py / eco.diff / ECO_RECORD / miter）。
 
@@ -220,4 +251,7 @@ module GCKHBQX4AL9 (CK, E, TE, Q); input CK,E,TE; output Q; reg latch;
 - `rtl-code-review` / `rtl-signal-trace`：RTL 跟上后的评审
 - `local-simulation`：Yosys miter 的本机环境
 
-<!-- ymzhu 2026-11-23 14:40 -->
+
+
+
+<!-- ymzhu 2026-11-24 10:45 -->
