@@ -13,7 +13,7 @@ disable-model-invocation: false
 
 | 模型 | 定位（2026-09-30 用户策略） |
 |---|---|
-| GLM-5.3 / GLM-5.3-flash / GLM-5.3-flashx | **默认主力**：已开 GLM 高级别套餐，一切派发优先 GLM 系（高强度用 GLM-5.3；快/大规模用 flash；不确定就直派继承当前路由） |
+| GLM-5.3 / GLM-5.3-flash / GLM-5.3-flashx | **默认主力**：已开 GLM 高级别套餐，一切派发优先 GLM 系（高强度用 GLM-5.4；GLM-5.3；快/大规模用 flash；不确定就直派继承当前路由） |
 | DeepSeek（xxw/DeepSeek） | **xxw 首选**：xxw provider 下的 DeepSeek 模型（baseURL 172.16.185.4:3000/v1）。**多 subagent 时，xxw 提供的模型（Qwen / DeepSeek）里 DeepSeek 接通就优先用 xxw/DeepSeek**；仅 xxw/DeepSeek 不可用（API 报错/超时/不接通）才 fallback 到 xxw/Qwen。⚠️ 需 subagent `allowedModels` 显式含 `xxw/DeepSeek`（2026-11-06 已加进 `profiles/desktop/cordis.patch.yml`；显式 `provider+model` 可绕过 catalog 热加载，不重启即用）。 |
 | Qwen（xxw/Qwen） | **xxw fallback**：⚠️ 仅 256K 上下文的小模型，xxw/DeepSeek 不可用时的兜底。派发输入必须精简：prompt 紧凑自包含（目标 + 必要文件路径），让 Qwen 自己去读文件，绝不内联大段文件内容、长背景或长输出 |
 
