@@ -48,7 +48,7 @@ description: PIL（Pillow）表格图 / 对比图渲染规范，含两套规范�
 
 **目标站点决定色板**：
 - 图进 **2M23 指南站**（synthesis-integration-flow-guide）→ 走本 skill 主流程（teal 同款）。
-- 图进 **暖纸站点**（blueprint-ui-style 画风，如 hk1v11-synthesis-postpt-practice）→ **改用 paper 色板 fork 模式**：表格图模板 `E:\project\HK1V11\back_ppt\gen_power_compare_hk11_site.py`（复用 `_gen_be_review_images.py` 的字体/混排助手但本地渲染：墨头条+纸底+语义行底），**数据行逐行照抄禁改**；matplotlib 组成图参考 `back_ppt/gen_power_composition_charts.py` v2 的 rcParams 站点色板。禁止把 teal 同款图直接嵌入暖纸站（视觉孤岛）。
+- 图进 **暖纸站点**（blueprint-ui-style 画风，如 hk1v11-synthesis-postpt-practice）→ **改用 paper 色板 fork 模式**：表格图模板 `E:\project\HK1V11\GITHUB\PPT\back_ppt\gen_power_compare_hk11_site.py`（复用 `_gen_be_review_images.py` 的字体/混排助手但本地渲染：墨头条+纸底+语义行底），**数据行逐行照抄禁改**；matplotlib 组成图参考 `back_ppt/gen_power_composition_charts.py` v2 的 rcParams 站点色板。禁止把 teal 同款图直接嵌入暖纸站（视觉孤岛）。
 - 渲染出的图**落站后的存放与归档**（主名位 / PNG 只进日期文件夹 / 生成脚本归 `images/tools/`）按 `blueprint-ui-style` skill 的「图版生命周期与归档标准」章执行——本 skill 只管渲染，不管图落位。
 
 把 `report_setup.csv` / `report_hold.csv` / `report_sd_busskew.csv` 等 PT summary csv
@@ -58,7 +58,7 @@ description: PIL（Pillow）表格图 / 对比图渲染规范，含两套规范�
 
 ### 模板脚本（直接改路径重跑，不要重写）
 
-- **主脚本模板**：`E:\project\HK1V11\back_ppt\gen_1008v3_csv2png_k3.py`
+- **主脚本模板**：`E:\project\HK1V11\GITHUB\PPT\back_ppt\gen_1008v3_csv2png_k3.py`
 - **样式函数库**（import 复用，勿复制）：`E:\project\team-share-public\synthesis-integration-flow-guide\script\_gen_be_review_images.py`
   （G.TEAL/G.INK/G.RED_TX/G.RED_BG/G.ZEBRA/G.GRID、title_bar、draw_mixed、F_MONO/F_CJK 字体）
 - **Python**：`E:\project\team-share-public\synthesis-integration-flow-guide\script\.venv\Scripts\python.exe`（PIL+numpy 已装）
@@ -97,7 +97,7 @@ description: PIL（Pillow）表格图 / 对比图渲染规范，含两套规范�
 1. 读 csv（`utf-8`/`utf-8-sig`），两层表头 csv 用 load_paired 对齐 corner 组。
 2. 改模板脚本的 `V3` 数据目录与输出文件名（版本后缀如 `_k3`）。
 3. 跑：`& "...script\.venv\Scripts\python.exe" "<脚本>.py"`，确认 ALL PASS。
-4. thumbnail 目检三边完整与配色，交付 `back_ppt/*.png`。
+4. thumbnail 目检三边完整与配色，交付 `GITHUB/PPT/back_ppt/*.png`。
 
 ---
 
@@ -105,7 +105,7 @@ description: PIL（Pillow）表格图 / 对比图渲染规范，含两套规范�
 
 适用于功耗模块对比、违例分布、skew 对比等"两组数据按功能块对齐"或"组成占比"场景。
 
-**模板脚本**：`E:\project\HK1V11\back_ppt\gen_power_composition_charts.py`（直接改数组重跑）
+**模板脚本**：`E:\project\HK1V11\GITHUB\PPT\back_ppt\gen_power_composition_charts.py`（直接改数组重跑）
 **参考效果**：ch08-powerpro.html §4.5「功耗组成可视化」
 
 #### 颜色系
@@ -144,5 +144,4 @@ plt.rcParams['axes.unicode_minus'] = False
 - 中文标签用 `\n` 控制宽度
 - 需要安装 matplotlib：`pip install matplotlib`
 - 环形图口径不变式（Σ片==中心、分母==中心、残差片显式登记、负残差 SystemExit）**规则本体见 `blueprint-ui-style/references/figure-pipeline.md` §4**，此处不重复；2M23 独立交付图同样适用该不变式。
-
-<!-- ymzhu 2026-11-18 10:46 -->
+<!-- ymzhu 2026-11-24 16:53 -->

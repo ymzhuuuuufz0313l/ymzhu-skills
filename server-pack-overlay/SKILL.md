@@ -53,18 +53,22 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 3. **提交后自检**（overlay_check 内置）：带 `--commit` 时它会 `git add -A -- <paths>` + commit，并**只按文件名**复核「提交文件数 == 暂存数」；不一致就是漏加，`git commit --amend` 补。**一次 overlay 一笔提交，不按目录拆笔**（2026-11-23 ymzhu 指令）。
 4. 解压产物目录（`script\_syn_*` / `_rtl_*` / `_dv_*`）靠 `.gitignore` 排除；若 overlay_check 把解压目录报成未跟踪杂散，说明 gitignore 漏了，补一行而不是 `git add` 进去。
 
-## 0C. 报告落位硬规则（2026-11-18 ymzhu 指令：base 目录不许乱）
+## 0C. 落位硬规则（2026-11-24 起以 project-control skill 为准；2026-11-18 版见文末备注）
 
-**仓库根目录禁止新增报告类文件**。分类落位：
+**仓库根目录禁止新增任何文件。** 白名单与各区规则见 project-control skill，机器判据是 `python script/gates/pc.py check`。与回传相关的落位：
 
 | 产物 | 落位 |
 |---|---|
-| pack_diff 五桶报告 / approved(.applied) 清单 / overlay 审计与基线 / 中间版本说明 `README_中间版本说明_<ver>.md` / 各类一次性分析报告 | `script/` |
-| 功耗/对比图等成套图产物 | 既有专项目录（`back_ppt/` 等生成器同目录） |
-| 长期维护的分析文档 | `docs/`，并在 AGENTS.md 文档索引登记 |
-| 根目录仅允许 | `AGENTS.md`、`README.md`、`REVIEW.md`（闸门生成物）、文档索引已登记的维护文档 |
+| pack_diff 五桶报告 / approved(.applied) 清单 / overlay 审计与基线 / 中间版本说明 `README_中间版本说明_<ver>.md` | `script/`（闸门与回传流程的机器产物，文件名模式固定） |
+| 回传包里的回传内容 | 五个回传目录之一：`HDL/` `SYNTHESIS/` `DV_TCON_C/` `FPGA/` `APR/` |
+| 包内 `designer/<组>/<人>/HK1V11/…` 这类个人目录的内容 | 不落到本地根目录：FPGA 工程副本只留源文件进 `FPGA/server_<版本>/`，模拟端交付进 `APR/analog_release/`（样例：`FPGA/server_1022V5/`、`APR/`） |
+| 一次性分析报告、审计、评审 | `内部分享/YYYYMMDD/NN.中文说明/readme.md` |
+| 功耗/对比图等成套图产物 | `GITHUB/PPT/back_ppt/` 等生成器同目录 |
+| 长期规则文档 | `docs/`（只放规则类；分析文档已对外发布的删、未发布的进内部分享） |
 
-执行纪律：agent 落盘前自检路径首段——非上表允许项且落在根目录 = 违规，改落 `script/` 再继续；发现历史残留报告随手 `git mv` 进 `script/` 并在 CHANGES 记一笔。
+执行纪律：agent 落盘前对照 project-control §4 的落位表，或直接跑 check；白名单外即违规。2026-11-24 目录整理之前的历史遗留不追溯。
+
+FPGA、APR 两类回传目录沿用本 skill 的同一套纪律（PACK_TAR、diff-first、overlay 校验）；包内结构的判定规则等第一个真实包样例到了再补，`overlay_check.py` 的 `--package FPGA/APR` 同步跟进。
 
 ## 0. 包定位与目录映射
 
@@ -166,5 +170,4 @@ description: 服务器回传压缩包（PACK_TAR_xxx.tar.gz）搬回本机的提
 **license 锁节点**：默认节点报 not enabled 时，指定到跑过综合的节点重试：`bsub -I -m node043 'source /eda/env/syn1709.cshrc && dc_shell -f run.tcl'`（dc_shell 0930 实测 node043 可用）。
 
 **交互探针必须复刻完整 setup 链（0930 探针污染教训）**：在 bsub 节点上做增量精修/what-if 实验时，只 source design.set + clk_period + ip_cons **不够**——必须补齐 `dont_use_all.tcl`（流程禁用 *SFF*/*X05* 等单元族；漏 source 会导致 DC 自由使用禁用单元，实验数字成为"放宽规则的上界"，不代表生产环境）。完整链：design.set → clk_period.tcl → ip_cons → **dont_use_all.tcl** → 目标库 target/link_library 设置 → read_ddc/网表 → 实验。库限制在 `SYNTHESIS/common/tcl_dir/dc/dont_use_all.tcl`。
-
-<!-- ymzhu 2026-11-23 16:20 -->
+<!-- ymzhu 2026-11-24 16:52 -->

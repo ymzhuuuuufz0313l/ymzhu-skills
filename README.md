@@ -8,6 +8,7 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 |---|---|---|
 | 「做个网站 / 新站 / 加一个站点 / 用我喜欢的风格」 | `blueprint-ui-style` | 读 §新站搭建强制流程 §0 强制读取链，复制 `site-template/` |
 | 「改一下站点 / 页面美化 / 改组件」 | `blueprint-ui-style` | 读 §使用规则 0.5 路由表 → §设计系统 + §站点组件模板 |
+| 「目录整理 / 新开工程建目录骨架 / 这个放哪 / 落位 / 根目录白名单」 | `project-control` | 新工程直接跑 `scripts/pc.py init`；老工程先盘点事实、出旧→新映射表给用户确认再动 |
 | 「加动画版 / 动效 / 静动双版」 | `blueprint-ui-style` | 读 v4 架构章 1→4 + `anim/MOTION_KIT.md` |
 | 「改图 / 重生成图 / 图里数字不对 / 图跟正文不一致 / 环形图加起来不对 / 归档旧图」 | `blueprint-ui-style` | 跑生成器 `--out` 与线上 `cmp`，别先手改 SVG；数字核对用 `references/figure-pipeline.md` |
 | 「审计站点 / 全站核对 / 扫一遍这些图 / 图体检」 | `blueprint-ui-style` | 读 `references/site-audit.md`，A0–A9 逐项，只读，报告落 `修改记录/` |
@@ -77,11 +78,11 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 > 审计协议 A0–A9 已并入 `blueprint-ui-style/references/site-audit.md`（2026-11-18 Q4=B 拍板，原独立 skill 撤销）。
 | `fireworks-tech-graph` | 技术图（架构/数据流/时序/状态机/ER/拓扑/时间线）生成并导出 SVG+PNG |
 | `gpt-image-2-style-library` | GPT-Image2 风格库 + 工业级 prompt 模板（分类/风格标签/坑位/案例） |
+| `project-control` | 工程目录骨架与落位规则：根目录白名单、回传五目录、内部分享/外部分享/GITHUB 命名、script 与 docs 维护、自检脚本 |
 
 ### 工具 / 杂项
 
 | Skill | 做什么 |
 |---|---|
 | `office-com-reader` | 读取加密/受保护的 Office（xlsx/docx/pptx）与 PDF：原生 COM API + pypdf + Acrobat COM 兜底，兼容企业 DLP 透明加密 |
-
-<!-- ymzhu 2026-11-23 14:40 -->
+<!-- ymzhu 2026-11-24 16:52 -->

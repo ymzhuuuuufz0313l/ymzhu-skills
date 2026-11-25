@@ -88,14 +88,69 @@ def repo_root(bootstrap: Path) -> Path:
     return Path(p.stdout.strip())
 
 
-def git_changed(root: Path) -> tuple[list[str], list[str]]:
+def git_changed(root: Path) -> tuple[list[str], list[str], set[str]]:
+    """返回（已跟踪的改动、未跟踪的新文件、纯改名的文件）。
+    core.quotepath=false：中文路径（修改记录/、内部分享/…）必须拿到真实 UTF-8 名字，否则会被当成"文件不存在"静默跳过。"""
     tracked: list[str] = []
-    p = run(["git", "diff", "--name-only", "HEAD"], root)
+    p = run(["git", "-c", "core.quotepath=false", "diff", "--name-only", "HEAD"], root)
     if p.returncode == 0:
-        tracked = [x for x in p.stdout.splitlines() if x.strip()]
-    p = run(["git", "ls-files", "--others", "--exclude-standard"], root)
-    untracked = [x for x in p.stdout.splitlines() if x.strip()] if p.returncode == 0 else []
-    return tracked, untracked
+        tracked = [x.replace("\\", "/") for x in p.stdout.splitlines() if x.strip()]
+    p = run(["git", "-c", "core.quotepath=false", "ls-files", "--others", "--exclude-standard"], root)
+    untracked = [x.replace("\\", "/") for x in p.stdout.splitlines() if x.strip()] if p.returncode == 0 else []
+    pure: set[str] = set()
+    p = run(["git", "-c", "core.quotepath=false", "diff", "--name-status", "-M", "HEAD"], root)
+    if p.returncode == 0:
+        for line in p.stdout.splitlines():
+            parts = line.split("\t")
+            if len(parts) == 3 and parts[0] == "R100":      # 相似度 100% = 只搬家、内容未变
+                pure.add(parts[2].replace("\\", "/"))
+    return tracked, untracked, pure
+
+
+def load_moves(root: Path, manifest: str | None) -> list[str]:
+    """本次之外内容的清单：每行一个"路径前缀"（# 开头为注释）。命中的改动文件视为本次之外的内容（整批搬来的旧内容，或此前就未入库的历史遗留）——
+    不查文件尾签名、不要求逐文件 CHANGES 覆盖（它们不是本次写的，只是换了位置）。纯改名由 git 自动识别，不需要清单。"""
+    if not manifest:
+        return []
+    p = root / manifest
+    if not p.is_file():
+        return ["\0missing"]
+    out = []
+    for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            out.append(line.replace("\\", "/").rstrip("/") + "/")
+    return out
+
+
+def split_moved(files: list[str], pure: set[str], prefixes: list[str]) -> tuple[list[str], list[str]]:
+    moved, kept = [], []
+    for f in files:
+        if f in pure or any(f.startswith(p) for p in prefixes):
+            moved.append(f)
+        else:
+            kept.append(f)
+    return moved, kept
+
+
+def pc_indexable(root: Path) -> bool:
+    return (root / "script" / "gates" / "pc.py").is_file() and (root / "script").is_dir()
+
+
+def layout_check(root: Path) -> dict:
+    """根目录白名单与分享目录命名（project-control 的 pc.py check）。没有配置时只告警。"""
+    pc = root / "script" / "gates" / "pc.py"
+    if not pc.is_file():
+        return {"tool": "layout", "status": "warn", "detail": "缺 script/gates/pc.py（project-control init 会同步一份）"}
+    r = run([sys.executable, str(pc), "check", "--root", str(root)], root, timeout=120)
+    lines = [l.strip() for l in (r.stdout or "").splitlines() if l.strip()]
+    verdict_line = next((l for l in reversed(lines) if l.startswith("verdict:")), "")
+    bad = [l[2:].strip() for l in lines if l.startswith("x ")]
+    if r.returncode == 0:
+        return {"tool": "layout", "status": "pass", "detail": verdict_line or "根目录白名单与分享目录命名通过"}
+    if r.returncode == 2:
+        return {"tool": "layout", "status": "warn", "detail": verdict_line or "未配置根目录白名单"}
+    return {"tool": "layout", "status": "fail", "detail": "根目录白名单或分享目录命名不合规 %d 项" % len(bad), "violations": bad[:50]}
 
 
 def head_pushed(root: Path) -> tuple[bool | None, str]:
@@ -119,14 +174,15 @@ def incdirs(root: Path) -> list[str]:
     return [f"+incdir+{d.relative_to(root).as_posix()}" for d in dirs]
 
 
-def iverilog_check(root: Path, files: list[str]) -> list[dict]:
+def iverilog_check(root: Path, files: list[str], defines: list[str] | None = None) -> list[dict]:
     exe = find_tool("iverilog")
     if not exe:
         return [{"tool": "iverilog", "status": "skipped", "detail": "iverilog 不在 PATH"}]
     define = root / "HDL" / "HK1V11_digital_top" / "HDL_define.v"
+    dflags = [f"-D{d}" for d in (defines or [])]
     out = []
     for f in files:
-        cmd = [exe, "-t", "null", "-g2012", "-o", os.devnull, str(define), f]
+        cmd = [exe, "-t", "null", "-g2012", *dflags, "-o", os.devnull, str(define), f]
         try:
             p = run(cmd, root, timeout=120, env=tool_env())
         except subprocess.TimeoutExpired:
@@ -154,14 +210,16 @@ def verilator_env(exe: str) -> dict[str, str]:
     return env
 
 
-def verilator_check(root: Path, files: list[str], max_warn: int) -> list[dict]:
+def verilator_check(root: Path, files: list[str], max_warn: int,
+                    defines: list[str] | None = None) -> list[dict]:
     exe = find_tool("verilator_bin") or find_tool("verilator.exe")
     if not exe:
         return [{"tool": "verilator", "status": "skipped",
                  "detail": "verilator 未安装（pacman -S mingw-w64-ucrt-x86_64-verilator）"}]
     venv = verilator_env(exe)
     define = root / "HDL" / "HK1V11_digital_top" / "HDL_define.v"
-    base = [exe, "--lint-only", "-Wall", "-Wno-fatal", "-Wno-UNUSEDSIGNAL",
+    dflags = [f"-D{d}" for d in (defines or [])]
+    base = [exe, "--lint-only", *dflags, "-Wall", "-Wno-fatal", "-Wno-UNUSEDSIGNAL",
             "-Wno-UNDRIVEN", "-Wno-DECLFILENAME", "-Wno-SYNCASYNCNET",
             "-Wno-VARHIDDEN", "-Wno-WIDTH"] + incdirs(root)
     out = []
@@ -277,13 +335,20 @@ def main() -> int:
     ap.add_argument("--allow-dirty-changes", action="store_true",
                     help="CHANGES.md 未覆盖时只告警不判红")
     ap.add_argument("--max-warn", type=int, default=20, help="单文件 verilator 告警上限")
+    ap.add_argument("--define", action="append", default=[], metavar="MACRO",
+                    help="透传给 iverilog/verilator 的额外宏（如 VU440_FPGA，可重复）")
     ap.add_argument("--json-only", action="store_true")
+    ap.add_argument("--moves", metavar="MANIFEST",
+                    help="本次之外内容的清单（每行一个路径前缀）：整批搬家来的旧内容、或此前就未入库的历史遗留——不查签名、不要求逐文件 CHANGES 覆盖；"
+                         "git 识别出的纯改名（R100）自动同等处理，不需要清单")
     args = ap.parse_args()
 
     root = repo_root(Path(__file__).resolve().parent)
     level_rank = LEVELS[args.level]
-    tracked, untracked = git_changed(root)
-    files = [f.replace("\\", "/") for f in (args.files or (tracked + untracked))]
+    tracked, untracked, pure_renamed = git_changed(root)
+    all_files = [f.replace("\\", "/") for f in (args.files or (tracked + untracked))]
+    prefixes = load_moves(root, args.moves)
+    moved, files = split_moved(all_files, pure_renamed, prefixes) if not args.files else ([], all_files)
     rtl_files = [f for f in files if Path(f).suffix.lower() in RTL_EXT]
     newest_rtl = max((root / f).stat().st_mtime for f in rtl_files
                      if (root / f).is_file()) if rtl_files else None
@@ -299,8 +364,17 @@ def main() -> int:
                        "detail": pushed_detail})
 
     checks.append({"tool": "scope", "status": "pass",
-                   "detail": f"{len(files)} 个改动文件（{len(rtl_files)} 个 RTL）",
-                   "files": files})
+                   "detail": f"{len(files)} 个改动文件（{len(rtl_files)} 个 RTL）"
+                             + (f"；另有 {len(moved)} 个为搬家/纯改名（内容未变，不查签名与逐文件覆盖）" if moved else ""),
+                   "files": files, "moved_count": len(moved)})
+    if "\0missing" in prefixes:
+        checks.append({"tool": "moves", "status": "fail", "detail": f"找不到搬迁清单 {args.moves}"})
+    checks.append(layout_check(root))
+    if pc_indexable(root):
+        r = run([sys.executable, str(root / "script" / "gates" / "pc.py"), "index", "--root", str(root)], root, timeout=120)
+        msg = [l for l in (r.stdout or r.stderr or "").splitlines() if l.strip()]
+        checks.append({"tool": "layout-index", "status": "pass" if r.returncode == 0 else "warn",
+                       "detail": msg[-1].strip() if msg else "script/README.md 索引"})
 
     checks.extend(signature_check(root, files))
     cov = changes_coverage(root, files)
@@ -309,8 +383,8 @@ def main() -> int:
     checks.append(cov)
 
     if level_rank >= LEVELS["L1"] and rtl_files:
-        checks.extend(iverilog_check(root, rtl_files))
-        checks.extend(verilator_check(root, rtl_files, args.max_warn))
+        checks.extend(iverilog_check(root, rtl_files, args.define))
+        checks.extend(verilator_check(root, rtl_files, args.max_warn, args.define))
 
     if level_rank >= LEVELS["L2"]:
         checks.append(newest_review(root, "review", newest_rtl))
@@ -336,6 +410,8 @@ def main() -> int:
         "checks": checks,
         "fails": len(fails),
         "warns": len(warns),
+        "moves_manifest": args.moves,
+        "moved_count": len(moved),
     }
     out_path = rdir / f"preflight_{ts}.json"
     out_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -354,5 +430,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
-# ymzhu 2026-11-16 15:20
+# ymzhu 2026-11-24 17:15

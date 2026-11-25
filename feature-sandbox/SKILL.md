@@ -21,7 +21,7 @@ Do **not** use this workflow for small, inline bug fixes or for changes that are
 
 Ask the user for a short feature name if it is not obvious from context. The workspace directory name should be `<feature>_ver/`, for example:
 
-- `longcode_ver` for long-encoding verification
+- `内部分享/longcode_ver`（原工程根目录 longcode_ver，2026-11-24 迁入） for long-encoding verification
 - `ddrphy_ver` for a new DDR PHY verification track
 - `powercalc_ver` for a new power analysis tool
 
@@ -101,11 +101,11 @@ If the project has a root changelog (e.g., `修改记录/CHANGES.md`):
 User: "我要新增一个 420b 长编码验证环境，不要混到主 changelog 里。"
 
 Agent actions:
-1. Create `longcode_ver/` with `current_work/`, `0703v1/`, `README.md`, `CHANGELOG.md`, `migration_checklist.md`.
+1. Create `内部分享/longcode_ver/` with `current_work/`, `0703v1/`, `README.md`, `CHANGELOG.md`, `migration_checklist.md`.
 2. Implement `long_encoding_ref_model.sv`, `isptx_sequence.sv` changes in `DV_TCON_C/`.
 3. Add `// ymzhu 0703_1445` to each modified file.
-4. Back up files to `longcode_ver/current_work/isptx_sequence_20260703_v1.sv`, etc.
-5. Write the first entry in `longcode_ver/CHANGELOG.md`.
+4. Back up files to `内部分享/longcode_ver/current_work/isptx_sequence_20260703_v1.sv`, etc.
+5. Write the first entry in `内部分享/longcode_ver/CHANGELOG.md`.
 6. Do **not** write anything into `修改记录/CHANGES.md`.
 
 ---
@@ -115,5 +115,4 @@ Agent actions:
 1. Copy files from `current_work/` back to their real project paths.
 2. Update main project filelists, case lists, or `AGENTS.md` if needed.
 3. Only then consider adding a brief merge note to the root changelog.
-
-<!-- ymzhu 2026-11-18 14:32 -->
+<!-- ymzhu 2026-11-24 16:52 -->

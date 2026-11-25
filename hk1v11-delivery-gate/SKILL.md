@@ -73,4 +73,10 @@ python script/gates/overlay_check.py post --package SYNTHESIS --paths SYNTHESIS/
 
 `scripts/preflight.py`、`scripts/overlay_check.py` 是项目 `script/gates/` 的镜像。**以项目内副本为准**；改脚本时两处同步（项目改完覆盖本目录），然后各自提交。
 
-<!-- ymzhu 2026-11-23 16:20 -->
+
+### 2026-11-24 新增（目录整理配套）
+
+- **目录自检并入闸门**：preflight 每次都会跑 `script/gates/pc.py check`（根目录白名单、GITHUB 根、内部分享/外部分享日期文件夹的 `NN.中文说明/` + readme.md），不合规记 `layout` FAIL；并顺手刷新 `script/README.md` 的索引（`layout-index`，只告警不判红）。规则见 `project-control` skill。
+- **搬家不算更新**：git 识别出的纯改名（R100，内容未变）不再逐个查签名和逐文件 CHANGES 覆盖，scope 行会单独报“另有 N 个为搬家/纯改名”。从未入过库、整批搬来的旧内容（以及此前就未入库的历史遗留）用 `--moves <清单>` 指定，清单每行一个路径前缀，豁免有据可查；清单放 `script/gates/`（`script/gates/reports/` 被忽略，放那里查不到）。
+- **中文路径修正**：枚举改动时加 `core.quotepath=false`。此前 `修改记录/`、`内部分享/` 这类中文路径会被 git 输出成八进制转义，脚本找不到文件就按“删除类改动”静默跳过——现在按真实名字检查。
+<!-- ymzhu 2026-11-24 17:15 -->

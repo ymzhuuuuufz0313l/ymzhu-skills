@@ -165,6 +165,7 @@ gtkwave wave\tb.vcd wave\tb.gtkw
 已跑通案例：HK1V11 项目 `t_8b1lane_checksum_pwrc_n2_longtest` 的 checksum 核心链路。
 
 - 参考 Sandbox：`E:\sandbox_t_8b1lane`
+- HK1V11 工程的本机仿真工作区：`E:\project\HK1V11\local_simulation\`（原 simulation/，2026-11-24 改名）。
 - 参考文档：`E:\project\HK1V11\本机仿真方案\通用本机仿真方案.md`
 - 参考工具链指南：`E:\project\HK1V11\本机仿真方案\HK1V11_open_source_toolflow.md`
 - 参考示例脚本：`E:\project\HK1V11\本机仿真方案\examples\run_iverilog.bat`
@@ -201,5 +202,4 @@ Windows:
 - 如果目标模块依赖大量标准单元或模拟宏，需要更多 stub 工作或无法直接剥离。
 - 每次改造后，把步骤和坑记录到当前目录 `本地仿真方案/` 下的 Markdown，方便后续复用。
 - 不要把记录文件写死到某个绝对路径（如 `E:\project\HK1V11\...`），要跟当前项目走。
-
-<!-- ymzhu 2026-11-18 14:32 -->
+<!-- ymzhu 2026-11-24 16:52 -->
