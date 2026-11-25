@@ -294,7 +294,7 @@ ymzhu 2026-11-24 定的规矩：**体检的产出直接写成 GitHub issue**，�
 | 单条候选 · 门控类 | https://github.com/ymzhuuuuufz0313l/HK1V11/issues/3 | 八节结构；"行里其余时间全是 0 为什么要门控"的问答；用现有 cell 演示改前改后 |
 | 单条候选 · 组合隔离类 | https://github.com/ymzhuuuuufz0313l/HK1V11/issues/4 | 时钟已关但组合空转怎么定价；隔离条件为什么必须等于消费条件 |
 
-发新票之前先把这三张读一遍（`gh issue view 3 -R ymzhuuuuufz0313l/HK1V11 --json body -q .body`），照着它们的节次和口吻写。这三张会随问答继续演进，以线上版为准；下面的八节表只是摘要。发票用 deck 工具：先 `deck_context`，再 `deck_issue_create`；用户提问用 `deck_issue_patch` 记原话和回答。
+发新票之前先把这三张读一遍（`gh issue view 3 -R ymzhuuuuufz0313l/HK1V11 --json body -q .body`），照着它们的节次和口吻写。这三张会随问答继续演进，以线上版为准；下面的八节表只是摘要。发票用 deck 工具：先 `deck_context`，再 `deck_issue_create`；票标题带编号前缀「N · 」（与本地 *GITHUB/ISSUE/<票号>/* 目录对齐）；用户提问的回答用 `deck_issue_patch` 写成票下评论，原话归档见「问答进票、原话归档」。
 
 ### 总表票（模板：issue 2）
 
@@ -315,9 +315,9 @@ ymzhu 2026-11-24 定的规矩：**体检的产出直接写成 GitHub issue**，�
 
 第 1 节回答"值不值得做"，第 2～4 节回答"为什么是这样、为什么改了是对的"，第 5～6 节回答"能得到什么、要担什么"。每节第一句就是结论。
 
-### 问答也进票
+### 问答进票、原话归档
 
-用户对某张票提问时：问题原话一字不改记进"维护者原话"（`deck_issue_patch originalWords`），回答写成票下的评论；问答改变了票里的结论，就同步把正文改掉。回答先给结论（"对，这是该条件下唯一的写法"），再把预期落差说在前面（比如"综合后网表变了，CTS 流程照常要重跑"）。
+用户对某张票提问时：回答写成票下的评论，开头一句话复述整理后的问题（"问：……"），先给结论（"对，这是该条件下唯一的写法"），再把预期落差说在前面（比如"综合后网表变了，CTS 流程照常要重跑"）；问答改变了票里的结论，就同步把正文改掉。原话一字不改归档到工程的 *GITHUB/ISSUE/<票号>/维护者原话.md*（目录按 GitHub 票号命名，与票标题的编号前缀对齐），票的正文和评论里只放整理后的问题。HK1V11 的工具 *script/issue_words_archive.py*：fetch 归档并从正文剥离原话节 / extra 补录 / push / verify / index 刷新票号对照表；`deck_issue_patch` 的 originalWords 会把原话写回正文，误用后跑一遍 fetch + push 收回。
 
 ### issue 排版（ymzhu 的阅读体验要求，硬规则）
 
@@ -339,4 +339,4 @@ ymzhu 2026-11-24 定的规矩：**体检的产出直接写成 GitHub issue**，�
 - `hk1v11-delivery-gate`：RTL 侧 L2 闸门
 - `rtl-code-review` / `rtl-signal-trace`：RTL 跟上后的评审
 - `local-simulation`：Yosys miter 的本机环境
-<!-- ymzhu 2026-11-24 17:05 -->
+<!-- ymzhu 2026-11-25 11:05 -->
