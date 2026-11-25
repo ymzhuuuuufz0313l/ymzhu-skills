@@ -77,7 +77,6 @@ ymzhu（HK1V11 芯片数字后端）的 Agent Skill 库。每个目录一个 ski
 | `blueprint-ui-style` | 用户首选的蓝图工程风（blueprint engineering aesthetic）：网站、HTML 报告、页面美化统一画风 |
 > 审计协议 A0–A9 已并入 `blueprint-ui-style/references/site-audit.md`（2026-11-18 Q4=B 拍板，原独立 skill 撤销）。
 | `fireworks-tech-graph` | 技术图（架构/数据流/时序/状态机/ER/拓扑/时间线）生成并导出 SVG+PNG |
-| `gpt-image-2-style-library` | GPT-Image2 风格库 + 工业级 prompt 模板（分类/风格标签/坑位/案例） |
 | `project-control` | 工程目录骨架与落位规则：根目录白名单、回传五目录、内部分享/外部分享/GITHUB 命名、script 与 docs 维护、自检脚本 |
 
 ### 工具 / 杂项

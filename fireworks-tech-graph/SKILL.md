@@ -27,9 +27,7 @@ Every command block below sets `SKILL_ROOT` itself. In Codex, replace `/absolute
 
 ## Workflow (Always Follow This Order)
 
-0. **Routing** — When the user's request is ambiguous between a technical diagram and an AI-generated image, present both options and ask which they prefer:
-   - **Option A (fireworks-tech-graph)**: Deterministic SVG diagram — pixel-precise, editable, keyless, best for architecture / UML / flowcharts / network / topology
-   - **Option B (gpt-image-2-style-library)**: AI-generated raster image — visually rich, needs gpt-image-2 API, best for posters / brand / illustration / concept art
+0. **Routing** — If the user's request looks like it wants an AI-generated raster image (poster / brand / illustration / concept art) rather than a deterministic technical diagram, say so and ask before proceeding; this skill only makes deterministic SVG diagrams.
    Example ambiguity triggers: "画图", "draw", "做个图", "generate an image". If the request clearly targets one domain, proceed directly without asking.
 1. **Classify** the diagram type (see Diagram Types below)
 2. **Extract structure** — identify layers, nodes, edges, flows, and semantic groups from user description

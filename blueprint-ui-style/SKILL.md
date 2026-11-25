@@ -15,7 +15,6 @@ description: 用户偏好的网页/UI 画风（蓝图工程风 blueprint enginee
    - `frontend-design` 同时触发时只作工程质量清单，不得引入新配色/字体/视觉方向；
    - `fireworks-tech-graph` 给本画风站点画内嵌图必须改用站点 `:root` 色板；
    - `pil-table-render` 目标是本画风站点时走其 paper fork 模式；2M23 指南站保持 teal；
-   - `gpt-image-2-style-library` 做网站默认不调用。
 0.5 **命中后先按任务类型定位必读章节**（2026-11-18 定）：
 
    | 任务长相 | 必读 | references |
